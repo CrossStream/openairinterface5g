@@ -30,8 +30,6 @@
 #ifndef RRC_ENB_GTPV1U_H_
 #define RRC_ENB_GTPV1U_H_
 
-# if defined(ENABLE_USE_MME)
-
 
 #   if defined(ENABLE_ITTI)
 
@@ -48,5 +46,4 @@ rrc_eNB_process_GTPV1U_CREATE_TUNNEL_RESP(
 );
 
 #   endif
-# endif /* defined(ENABLE_USE_MME) */
 #endif /* RRC_ENB_GTPV1U_H_ */

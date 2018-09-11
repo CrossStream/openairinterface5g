@@ -27,7 +27,6 @@
  * \company Eurecom
  * \email: navid.nikaein@eurecom.fr
  */
-#if defined(ENABLE_USE_MME)
 # include "rrc_defs.h"
 # include "rrc_extern.h"
 # include "RRC/L2_INTERFACE/openair_rrc_L2_interface.h"
@@ -1978,4 +1977,3 @@ int rrc_eNB_process_PAGING_IND(MessageDef *msg_p, const char *msg_name, instance
 }
 
 # endif /* defined(ENABLE_ITTI) */
-#endif /* defined(ENABLE_USE_MME) */

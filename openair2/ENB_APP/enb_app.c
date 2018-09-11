@@ -39,17 +39,14 @@
 
 #if defined(ENABLE_ITTI)
 # include "intertask_interface.h"
-# if defined(ENABLE_USE_MME)
-#   include "s1ap_eNB.h"
-#   include "sctp_eNB_task.h"
-#   include "gtpv1u_eNB_task.h"
-# else
-#    define EPC_MODE_ENABLED 0
-# endif
-
-#   include "x2ap_eNB.h"
-#   include "x2ap_messages_types.h"
-#   define X2AP_ENB_REGISTER_RETRY_DELAY   10
+# include "s1ap_eNB.h"
+# include "sctp_eNB_task.h"
+# include "gtpv1u_eNB_task.h"
+# include "s1ap_eNB.h"
+# include "sctp_eNB_task.h"
+# include "x2ap_eNB.h"
+# include "x2ap_messages_types.h"
+# define X2AP_ENB_REGISTER_RETRY_DELAY   10
 
 #include "openair1/PHY/INIT/phy_init.h"
 extern unsigned char NB_eNB_INST;
@@ -60,9 +57,8 @@ extern RAN_CONTEXT_t RC;
 #if defined(ENABLE_ITTI)
 
 /*------------------------------------------------------------------------------*/
-# if defined(ENABLE_USE_MME)
 #   define ENB_REGISTER_RETRY_DELAY 10
-# endif
+
 
 #include "targets/RT/USER/lte-softmodem.h"
 
@@ -111,9 +107,10 @@ static void configure_rrc(uint32_t enb_id)
 }
 
 /*------------------------------------------------------------------------------*/
-# if defined(ENABLE_USE_MME)
+
 static uint32_t eNB_app_register(uint32_t enb_id_start, uint32_t enb_id_end)//, const Enb_properties_array_t *enb_properties)
 {
+if (EPC_MODE_ENABLED) {
   uint32_t         enb_id;
   MessageDef      *msg_p;
   uint32_t         register_enb_pending = 0;
@@ -138,8 +135,10 @@ static uint32_t eNB_app_register(uint32_t enb_id_start, uint32_t enb_id_end)//, 
   }
 
   return register_enb_pending;
+} else {
+  return 0;
 }
-# endif
+}
 #endif
 
 /*------------------------------------------------------------------------------*/
@@ -173,11 +172,10 @@ void *eNB_app_task(void *args_p)
   uint32_t                        enb_nb = RC.nb_inst; 
   uint32_t                        enb_id_start = 0;
   uint32_t                        enb_id_end = enb_id_start + enb_nb;
-# if defined(ENABLE_USE_MME)
   uint32_t                        register_enb_pending=0;
   uint32_t                        registered_enb;
   long                            enb_register_retry_timer_id;
-# endif
+
   uint32_t                        x2_register_enb_pending;
   uint32_t                        x2_registered_enb;
   long                            x2_enb_register_retry_timer_id;
@@ -216,15 +214,15 @@ void *eNB_app_task(void *args_p)
     configure_rrc(enb_id);
   }
 
-# if defined(ENABLE_USE_MME)
+  if (EPC_MODE_ENABLED) {
   /* Try to register each eNB */
     registered_enb = 0;
     register_enb_pending = eNB_app_register (enb_id_start, enb_id_end);//, enb_properties_p);
-#else
+  } else {
   /* Start L2L1 task */
     msg_p = itti_alloc_new_message(TASK_ENB_APP, INITIALIZE_MESSAGE);
     itti_send_msg_to_task(TASK_L2L1, INSTANCE_DEFAULT, msg_p);
-#endif
+  }
 
   /* Try to register each eNB with each other */
   x2_registered_enb = 0;
@@ -251,7 +249,7 @@ void *eNB_app_task(void *args_p)
       break;
 
     case S1AP_REGISTER_ENB_CNF:
-# if defined(ENABLE_USE_MME)
+      if (EPC_MODE_ENABLED) {
   	LOG_I(ENB_APP, "[eNB %d] Received %s: associated MME %d\n", instance, ITTI_MSG_NAME (msg_p),
   	      S1AP_REGISTER_ENB_CNF(msg_p).nb_mme);
 
@@ -288,7 +286,7 @@ void *eNB_app_task(void *args_p)
   	    }
   	  }
   	}
-#endif
+      } /* if (EPC_MODE_ENABLED) */
       break;
 
     case S1AP_DEREGISTERED_ENB_IND:
@@ -301,7 +299,7 @@ void *eNB_app_task(void *args_p)
       break;
 
     case TIMER_HAS_EXPIRED:
-# if defined(ENABLE_USE_MME)
+      if (EPC_MODE_ENABLED) {
       LOG_I(ENB_APP, " Received %s: timer_id %ld\n", ITTI_MSG_NAME (msg_p), TIMER_HAS_EXPIRED(msg_p).timer_id);
 
       if (TIMER_HAS_EXPIRED (msg_p).timer_id == enb_register_retry_timer_id) {
@@ -315,7 +313,7 @@ void *eNB_app_task(void *args_p)
 	x2_registered_enb = 0;
         x2_register_enb_pending = eNB_app_register_x2 (enb_id_start, enb_id_end);
       }
-# endif
+     } /* if (EPC_MODE_ENABLED) */
       break;
 
     case X2AP_DEREGISTERED_ENB_IND:

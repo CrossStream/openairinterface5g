@@ -35,10 +35,8 @@
 #include "assertions.h"
 #if defined(ENABLE_ITTI)
 # include "intertask_interface.h"
-# if defined(ENABLE_USE_MME)
-#   include "s1ap_eNB.h"
-#   include "sctp_eNB_task.h"
-# endif
+# include "s1ap_eNB.h"
+# include "sctp_eNB_task.h"
 #endif
 #include "SystemInformationBlockType2.h"
 #include "common/config/config_userapi.h"

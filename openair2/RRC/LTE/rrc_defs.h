@@ -296,9 +296,7 @@ void *send_UE_status_notification(void *);
 # include "as_message.h"
 #endif
 
-#if defined(ENABLE_USE_MME)
 # include "commonDef.h"
-#endif
 
 //--------
 typedef unsigned int uid_t;
@@ -720,11 +718,9 @@ typedef struct OAI_UECapability_s {
 typedef struct UE_RRC_INST_s {
   Rrc_State_t     RrcState;
   Rrc_Sub_State_t RrcSubState;
-# if defined(ENABLE_USE_MME)
   plmn_t          plmnID;
   Byte_t          rat;
   as_nas_info_t   initialNasMsg;
-# endif
   OAI_UECapability_t *UECap;
   uint8_t *UECapability;
   uint8_t UECapability_size;

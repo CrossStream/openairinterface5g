@@ -78,16 +78,13 @@
 #   include "UTIL/OSA/osa_defs.h"
 #endif
 
-#if defined(ENABLE_USE_MME)
-#   include "rrc_eNB_S1AP.h"
-#   include "rrc_eNB_GTPV1U.h"
-#   if defined(ENABLE_ITTI)
-#   else
-#      include "../../S1AP/s1ap_eNB.h"
-#   endif
+#include "rrc_eNB_S1AP.h"
+#include "rrc_eNB_GTPV1U.h"
+#if defined(ENABLE_ITTI)
 #else
-# define EPC_MODE_ENABLED 0
+#   include "../../S1AP/s1ap_eNB.h"
 #endif
+
 
 #include "pdcp.h"
 #include "gtpv1u_eNB_task.h"
@@ -1417,7 +1414,7 @@ rrc_eNB_process_RRCConnectionReestablishmentComplete(
   ue_context_pP->ue_context.Srb1.Active = 1;
   //ue_context_pP->ue_context.Srb2.Srb_info.Srb_id = 2;
 
-#if defined(ENABLE_USE_MME) 
+  if (EPC_MODE_ENABLED) { 
     hashtable_rc_t    h_rc;
     int               j;
     rrc_ue_s1ap_ids_t* rrc_ue_s1ap_ids_p = NULL;
@@ -1461,18 +1458,18 @@ rrc_eNB_process_RRCConnectionReestablishmentComplete(
               ctxt_pP->instance,
               &create_tunnel_req,
               reestablish_rnti);
-#endif
+  } /* EPC_MODE_ENABLED */
   /* Update RNTI in ue_context */
   ue_context_pP->ue_id_rnti                    = ctxt_pP->rnti; // here ue_id_rnti is just a key, may be something else
   ue_context_pP->ue_context.rnti               = ctxt_pP->rnti;
-#if defined(ENABLE_USE_MME)
+  if (EPC_MODE_ENABLED) {
     uint8_t send_security_mode_command = FALSE;
     rrc_pdcp_config_security(
         ctxt_pP,
         ue_context_pP,
         send_security_mode_command);
     LOG_D(RRC, "set security successfully \n");
-#endif
+  }
   // Measurement ID list
   MeasId_list = CALLOC(1, sizeof(*MeasId_list));
   memset((void *)MeasId_list, 0, sizeof(*MeasId_list));
@@ -5356,13 +5353,12 @@ rrc_eNB_process_RRCConnectionReconfigurationComplete(
 //-----------------------------------------------------------------------------
 {
   int                                 i, drb_id;
-#ifdef PDCP_USE_NETLINK
   int                                 oip_ifup = 0;
   int                                 dest_ip_offset = 0;
   /* avoid gcc warnings */
   (void)oip_ifup;
   (void)dest_ip_offset;
-#endif
+
 
   uint8_t                            *kRRCenc = NULL;
   uint8_t                            *kRRCint = NULL;
@@ -5492,38 +5488,38 @@ rrc_eNB_process_RRCConnectionReconfigurationComplete(
           LOG_D(RRC,
                 "[eNB %d] Frame %d: Establish RLC UM Bidirectional, DRB %d Active\n",
                 ctxt_pP->module_id, ctxt_pP->frame, (int)DRB_configList->list.array[i]->drb_Identity);
-#if  defined(PDCP_USE_NETLINK) && !defined(LINK_ENB_PDCP_TO_GTPV1U)
+          if (PDCP_USE_NETLINK && (!LINK_ENB_PDCP_TO_GTPV1U)) {
           // can mean also IPV6 since ether -> ipv6 autoconf
 #   if !defined(OAI_NW_DRIVER_TYPE_ETHERNET) && !defined(EXMIMO) && !defined(OAI_USRP) && !defined(OAI_BLADERF) && !defined(ETHERNET)
-          LOG_I(OIP, "[eNB %d] trying to bring up the OAI interface oai%d\n",
-                ctxt_pP->module_id,
-                ctxt_pP->module_id);
-          oip_ifup = nas_config(
-                       ctxt_pP->module_id,   // interface index
-                       ctxt_pP->module_id + 1,   // thrid octet
-                       ctxt_pP->module_id + 1);  // fourth octet
+            LOG_I(OIP, "[eNB %d] trying to bring up the OAI interface oai%d\n",
+                  ctxt_pP->module_id,
+                  ctxt_pP->module_id);
+            oip_ifup = nas_config(
+                         ctxt_pP->module_id,   // interface index
+                         ctxt_pP->module_id + 1,   // thrid octet
+                         ctxt_pP->module_id + 1);  // fourth octet
 
-          if (oip_ifup == 0) {    // interface is up --> send a config the DRB
-            module_id_t ue_module_id; 
-            dest_ip_offset = 8;
-            LOG_I(OIP,
-                  "[eNB %d] Config the oai%d to send/receive pkt on DRB %ld to/from the protocol stack\n",
-                  ctxt_pP->module_id, ctxt_pP->module_id,
-                  (long int)((ue_context_pP->local_uid * maxDRB) + DRB_configList->list.array[i]->drb_Identity));
-            ue_module_id = oai_emulation.info.eNB_ue_local_uid_to_ue_module_id[ctxt_pP->module_id][ue_context_pP->local_uid];
-            rb_conf_ipv4(0, //add
-                         ue_module_id,  //cx
-                         ctxt_pP->module_id,    //inst
-                         (ue_module_id * maxDRB) + DRB_configList->list.array[i]->drb_Identity, // RB
-                         0,    //dscp
-                         ipv4_address(ctxt_pP->module_id + 1, ctxt_pP->module_id + 1),  //saddr
-                         ipv4_address(ctxt_pP->module_id + 1, dest_ip_offset + ue_module_id + 1));  //daddr
-            LOG_D(RRC, "[eNB %d] State = Attached (UE rnti %x module id %u)\n",
-                  ctxt_pP->module_id, ue_context_pP->ue_context.rnti, ue_module_id);
-          }
+            if (oip_ifup == 0) {    // interface is up --> send a config the DRB
+              module_id_t ue_module_id; 
+              dest_ip_offset = 8;
+              LOG_I(OIP,
+                    "[eNB %d] Config the oai%d to send/receive pkt on DRB %ld to/from the protocol stack\n",
+                    ctxt_pP->module_id, ctxt_pP->module_id,
+                    (long int)((ue_context_pP->local_uid * maxDRB) + DRB_configList->list.array[i]->drb_Identity));
+              ue_module_id = oai_emulation.info.eNB_ue_local_uid_to_ue_module_id[ctxt_pP->module_id][ue_context_pP->local_uid];
+              rb_conf_ipv4(0, //add
+                           ue_module_id,  //cx
+                           ctxt_pP->module_id,    //inst
+                           (ue_module_id * maxDRB) + DRB_configList->list.array[i]->drb_Identity, // RB
+                           0,    //dscp
+                           ipv4_address(ctxt_pP->module_id + 1, ctxt_pP->module_id + 1),  //saddr
+                           ipv4_address(ctxt_pP->module_id + 1, dest_ip_offset + ue_module_id + 1));  //daddr
+              LOG_D(RRC, "[eNB %d] State = Attached (UE rnti %x module id %u)\n",
+                    ctxt_pP->module_id, ue_context_pP->ue_context.rnti, ue_module_id);
+            }
 
 #   endif
-#endif
+          }
 
           LOG_D(RRC,
                 PROTOCOL_RRC_CTXT_UE_FMT" RRC_eNB --- MAC_CONFIG_REQ  (DRB) ---> MAC_eNB\n",
@@ -5801,11 +5797,8 @@ openair_rrc_eNB_init(
   //    for (j = 0; j < MAX_MOBILES_PER_ENB; j++)
   //        RC.rrc[ctxt.module_id].Info.UE[j].Status = RRC_IDLE;  //CH_READY;
   //
-  //#if defined(ENABLE_USE_MME)
+  //if (EPC_MODE_ENABLED) {
   //    // Connect eNB to MME
-  //    if (EPC_MODE_ENABLED <= 0)
-  //#endif
-  //    {
   //        /* Init security parameters */
   //        for (j = 0; j < MAX_MOBILES_PER_ENB; j++) {
   //            RC.rrc[ctxt.module_id].ciphering_algorithm[j] = SecurityAlgorithmConfig__cipheringAlgorithm_eea0;
@@ -5969,36 +5962,7 @@ rrc_eNB_decode_ccch(
                0,
                0);
 
-  /*
-#if defined(ENABLE_ITTI)
-#   if defined(DISABLE_ITTI_XER_PRINT)
-  {
-    MessageDef                         *message_p;
 
-    message_p = itti_alloc_new_message(TASK_RRC_ENB, RRC_UL_CCCH_MESSAGE);
-    memcpy(&message_p->ittiMsg, (void *)ul_ccch_msg, sizeof(RrcUlCcchMessage));
-
-    itti_send_msg_to_task(TASK_UNKNOWN, ctxt_pP->instance, message_p);
-  }
-#   else
-  {
-    char                                message_string[10000];
-    size_t                              message_string_size;
-
-    if ((message_string_size =
-           xer_sprint(message_string, sizeof(message_string), &asn_DEF_UL_CCCH_Message, (void *)ul_ccch_msg)) > 0) {
-      MessageDef                         *msg_p;
-
-      msg_p = itti_alloc_new_message_sized(TASK_RRC_ENB, RRC_UL_CCCH, message_string_size + sizeof(IttiMsgText));
-      msg_p->ittiMsg.rrc_ul_ccch.size = message_string_size;
-      memcpy(&msg_p->ittiMsg.rrc_ul_ccch.text, message_string, message_string_size);
-
-      itti_send_msg_to_task(TASK_UNKNOWN, ctxt_pP->instance, msg_p);
-    }
-  }
-#   endif
-#endif
-  */
 
   for (i = 0; i < 8; i++) {
     LOG_T(RRC, "%x.", ((uint8_t *) & ul_ccch_msg)[i]);
@@ -6503,10 +6467,8 @@ rrc_eNB_decode_dcch(
   int i;
   struct rrc_eNB_ue_context_s*        ue_context_p = NULL;
 #if defined(ENABLE_ITTI)
-#   if defined(ENABLE_USE_MME)
   MessageDef *                        msg_delete_tunnels_p = NULL;
   uint8_t                             xid;
-#endif
 #endif
 
   int dedicated_DRB=0; 
@@ -6643,7 +6605,7 @@ rrc_eNB_decode_dcch(
   		  PROTOCOL_RRC_CTXT_UE_ARGS(ctxt_pP),ul_dcch_msg->message.choice.c1.choice.rrcConnectionReconfigurationComplete.rrc_TransactionIdentifier);
   	  }
   	  ue_context_p->ue_context.reestablishment_xid = -1;
-        } else {
+        } else { /* EPC_MODE_ENABLED */
   	  dedicated_DRB = 1;
   	  ue_context_p->ue_context.Status = RRC_RECONFIGURED;
   	  LOG_I(RRC,
@@ -6664,7 +6626,7 @@ rrc_eNB_decode_dcch(
 	}
       }
 #if defined(ENABLE_ITTI)
-#if defined(ENABLE_USE_MME)
+      if (EPC_MODE_ENABLED) {
 	if (dedicated_DRB == 1){
 //	  rrc_eNB_send_S1AP_E_RAB_SETUP_RESP(ctxt_pP,
 //					     ue_context_p,
@@ -6729,7 +6691,7 @@ if (ue_context_p->ue_context.nb_of_modify_e_rabs > 0) {
                }
              }
          }
-#endif   
+      } /* EPC_MODE_ENABLED */
 #else  // establish a dedicated bearer 
       if (dedicated_DRB == 0 ) {
 	//	ue_context_p->ue_context.e_rab[0].status = E_RAB_STATUS_ESTABLISHED;
@@ -7008,13 +6970,10 @@ if (ue_context_p->ue_context.nb_of_modify_e_rabs > 0) {
       }
 
       if (EPC_MODE_ENABLED) {
-
-        if (EPC_MODE_ENABLED == 1) {
   	  rrc_eNB_send_S1AP_UE_CAPABILITIES_IND(ctxt_pP,
   						ue_context_p,
   						ul_dcch_msg);
-  	}
-      } else {
+  	} else {
   	ue_context_p->ue_context.nb_of_e_rabs = 1;
   	for (i = 0; i < ue_context_p->ue_context.nb_of_e_rabs; i++){
   	  ue_context_p->ue_context.e_rab[i].status = E_RAB_STATUS_NEW;
@@ -7290,7 +7249,7 @@ void *rrc_enb_process_itti_msg(void *notUsed) {
       }
       break;
 
-#   if defined(ENABLE_USE_MME)
+
 
       /* Messages from S1AP */
     case S1AP_DOWNLINK_NAS:
@@ -7341,8 +7300,6 @@ void *rrc_enb_process_itti_msg(void *notUsed) {
         rrc_eNB_get_ue_context(RC.rrc[instance], GTPV1U_ENB_DELETE_TUNNEL_RESP(msg_p).rnti)->ue_context.ue_release_timer_thres_rrc;
       }
       break;
-
-#   endif
 
       /* Messages from eNB app */
     case RRC_CONFIGURATION_REQ:

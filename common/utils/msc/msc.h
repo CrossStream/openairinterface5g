@@ -108,6 +108,8 @@ void msc_log_message(
 
 #else
 
+#define MESSAGE_CHART_GENERATOR  msc_interface.msc_loaded 
+
 msc_interface_t msc_interface;
 #define MSC_INIT(arg1,arg2)                                     if(msc_interface.msc_loaded) msc_interface.msc_init(arg1,arg2)
 #define MSC_START_USE                                           if(msc_interface.msc_loaded) msc_interface.msc_start_use
@@ -117,6 +119,7 @@ msc_interface_t msc_interface;
 #define MSC_LOG_RX_DISCARDED_MESSAGE(rECEIVER, sENDER, bYTES, nUMbYTES, fORMAT, aRGS...) if(msc_interface.msc_loaded) msc_interface.msc_log_message("x-",rECEIVER, sENDER, (const uint8_t *)bYTES, nUMbYTES, fORMAT, ##aRGS)
 #define MSC_LOG_TX_MESSAGE(sENDER, rECEIVER, bYTES, nUMbYTES, fORMAT, aRGS...)           if(msc_interface.msc_loaded) msc_interface.msc_log_message("->",sENDER, rECEIVER, (const uint8_t *)bYTES, nUMbYTES, fORMAT, ##aRGS)
 #define MSC_LOG_TX_MESSAGE_FAILED(sENDER, rECEIVER, bYTES, nUMbYTES, fORMAT, aRGS...)    if(msc_interface.msc_loaded) msc_interface.msc_log_message("-x",sENDER, rECEIVER, (const uint8_t *)bYTES, nUMbYTES, fORMAT, ##aRGS)
+
 #endif
 
 #endif 

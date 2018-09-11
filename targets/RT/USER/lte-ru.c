@@ -104,12 +104,8 @@ static int DEFENBS[] = {0};
 #endif
 
 #if defined(ENABLE_ITTI)
-# if defined(ENABLE_USE_MME)
 #   include "s1ap_eNB.h"
-#ifdef PDCP_USE_NETLINK
 #   include "SIMULATION/ETH_TRANSPORT/proto.h"
-#endif
-# endif
 #endif
 
 #include "T.h"

@@ -174,19 +174,10 @@ static int rrc_set_state (module_id_t ue_mod_idP, Rrc_State_t state)
                "Invalid state %d!\n", state);
 
   if (UE_rrc_inst[ue_mod_idP].RrcState != state) {
+
+    LOG_I(RRC,"[UE%i], state %d -> %d substate %d\n" ,ue_mod_idP,UE_rrc_inst[ue_mod_idP].RrcState,
+          state, UE_rrc_inst[ue_mod_idP].RrcSubState );
     UE_rrc_inst[ue_mod_idP].RrcState = state;
-
-#if defined(ENABLE_ITTI)
-    {
-      MessageDef *msg_p;
-
-      msg_p = itti_alloc_new_message(TASK_RRC_UE, RRC_STATE_IND);
-      RRC_STATE_IND(msg_p).state = UE_rrc_inst[ue_mod_idP].RrcState;
-      RRC_STATE_IND(msg_p).sub_state = UE_rrc_inst[ue_mod_idP].RrcSubState;
-
-      itti_send_msg_to_task(TASK_UNKNOWN, UE_MODULE_ID_TO_INSTANCE(ue_mod_idP), msg_p);
-    }
-#endif
     return (1);
   }
 
@@ -218,19 +209,11 @@ static int rrc_set_sub_state( module_id_t ue_mod_idP, Rrc_Sub_State_t subState )
 #endif
 
   if (UE_rrc_inst[ue_mod_idP].RrcSubState != subState) {
+    LOG_I(RRC,"[UE%i], state %d substate %d -> %d \n" ,ue_mod_idP,UE_rrc_inst[ue_mod_idP].RrcState,
+          UE_rrc_inst[ue_mod_idP].RrcSubState, subState );
     UE_rrc_inst[ue_mod_idP].RrcSubState = subState;
 
-#if defined(ENABLE_ITTI)
-    {
-      MessageDef *msg_p;
 
-      msg_p = itti_alloc_new_message(TASK_RRC_UE, RRC_STATE_IND);
-      RRC_STATE_IND(msg_p).state = UE_rrc_inst[ue_mod_idP].RrcState;
-      RRC_STATE_IND(msg_p).sub_state = UE_rrc_inst[ue_mod_idP].RrcSubState;
-
-      itti_send_msg_to_task(TASK_UNKNOWN, UE_MODULE_ID_TO_INSTANCE(ue_mod_idP), msg_p);
-    }
-#endif
     return (1);
   }
 
@@ -733,33 +716,6 @@ int rrc_ue_decode_ccch( const protocol_ctxt_t* const ctxt_pP, const SRB_INFO* co
      xer_fprint(stdout,&asn_DEF_DL_CCCH_Message,(void*)dl_ccch_msg);
   }
 
-#if defined(ENABLE_ITTI)
-# if defined(DISABLE_ITTI_XER_PRINT)
-  {
-    MessageDef *msg_p;
-
-    msg_p = itti_alloc_new_message (TASK_RRC_UE, RRC_DL_CCCH_MESSAGE);
-    memcpy (&msg_p->ittiMsg, (void *) dl_ccch_msg, sizeof(RrcDlCcchMessage));
-
-    itti_send_msg_to_task (TASK_UNKNOWN, ctxt_pP->instance, msg_p);
-  }
-# else
-  {
-    char        message_string[10000];
-    size_t      message_string_size;
-
-    if ((message_string_size = xer_sprint(message_string, sizeof(message_string), &asn_DEF_DL_CCCH_Message, (void *)dl_ccch_msg)) > 0) {
-      MessageDef *msg_p;
-
-      msg_p = itti_alloc_new_message_sized (TASK_RRC_UE, RRC_DL_CCCH, message_string_size + sizeof (IttiMsgText));
-      msg_p->ittiMsg.rrc_dl_ccch.size = message_string_size;
-      memcpy(&msg_p->ittiMsg.rrc_dl_ccch.text, message_string, message_string_size);
-
-      itti_send_msg_to_task(TASK_UNKNOWN, ctxt_pP->instance, msg_p);
-    }
-  }
-# endif
-#endif
 
   if ((dec_rval.code != RC_OK) && (dec_rval.consumed==0)) {
     LOG_E(RRC,"[UE %d] Frame %d : Failed to decode DL-CCCH-Message (%zu bytes)\n",ctxt_pP->module_id,ctxt_pP->frame,dec_rval.consumed);
@@ -1931,24 +1887,6 @@ rrc_ue_process_securityModeCommand(
        xer_fprint(stdout, &asn_DEF_UL_DCCH_Message, (void*)&ul_dcch_msg);
     }
     
-#if defined(ENABLE_ITTI)
-# if !defined(DISABLE_XER_SPRINT)
-    {
-      char        message_string[20000];
-      size_t      message_string_size;
-      
-      if ((message_string_size = xer_sprint(message_string, sizeof(message_string), &asn_DEF_UL_DCCH_Message, (void *) &ul_dcch_msg)) > 0) {
-	MessageDef *msg_p;
-	
-	msg_p = itti_alloc_new_message_sized (TASK_RRC_UE, RRC_UL_DCCH, message_string_size + sizeof (IttiMsgText));
-	msg_p->ittiMsg.rrc_ul_dcch.size = message_string_size;
-	memcpy(&msg_p->ittiMsg.rrc_ul_dcch.text, message_string, message_string_size);
-	
-	itti_send_msg_to_task(TASK_UNKNOWN, ctxt_pP->instance, msg_p);
-      }
-    }
-# endif
-#endif
 
       LOG_D(RRC, "securityModeComplete Encoded %zd bits (%zd bytes)\n", enc_rval.encoded, (enc_rval.encoded+7)/8);
 
@@ -2042,26 +1980,6 @@ rrc_ue_process_ueCapabilityEnquiry(
          xer_fprint(stdout, &asn_DEF_UL_DCCH_Message, (void*)&ul_dcch_msg);
       }
       
-#if defined(ENABLE_ITTI)
-# if !defined(DISABLE_XER_SPRINT)
-      {
-	char        message_string[20000];
-	size_t      message_string_size;
-	
-	if ((message_string_size = xer_sprint(message_string, sizeof(message_string), &asn_DEF_UL_DCCH_Message, (void *) &ul_dcch_msg)) > 0) {
-	  MessageDef *msg_p;
-	  
-	  msg_p = itti_alloc_new_message_sized (TASK_RRC_UE, RRC_UL_DCCH, message_string_size + sizeof (IttiMsgText));
-	  msg_p->ittiMsg.rrc_ul_dcch.size = message_string_size;
-	  memcpy(&msg_p->ittiMsg.rrc_ul_dcch.text, message_string, message_string_size);
-	  
-	  itti_send_msg_to_task(TASK_UNKNOWN, ctxt_pP->instance, msg_p);
-	}
-      }
-# endif
-#endif
-	
-
           LOG_I(RRC,"UECapabilityInformation Encoded %zd bits (%zd bytes)\n",enc_rval.encoded,(enc_rval.encoded+7)/8);
 
           for (i = 0; i < (enc_rval.encoded + 7) / 8; i++) {
@@ -2410,15 +2328,7 @@ rrc_ue_decode_dcch(
     return;
   }
 
-  //memset(dl_dcch_msg,0,sizeof(DL_DCCH_Message_t));
 
-  // decode messages
-  //  LOG_D(RRC,"[UE %d] Decoding DL-DCCH message\n",ue_mod_idP);
-  /*
-  for (i=0;i<30;i++)
-    LOG_T(RRC,"%x.",Buffer[i]);
-  LOG_T(RRC, "\n");
-   */
   uper_decode(NULL,
               &asn_DEF_DL_DCCH_Message,
               (void**)&dl_dcch_msg,
@@ -2429,29 +2339,6 @@ rrc_ue_decode_dcch(
      xer_fprint(stdout,&asn_DEF_DL_DCCH_Message,(void*)dl_dcch_msg);
   }
 
-#if defined(ENABLE_ITTI)
-# if defined(DISABLE_ITTI_XER_PRINT)
-  {
-    msg_p = itti_alloc_new_message (TASK_RRC_UE, RRC_DL_DCCH_MESSAGE);
-    memcpy (&msg_p->ittiMsg, (void *) dl_dcch_msg, sizeof(RrcDlDcchMessage));
-
-    itti_send_msg_to_task (TASK_UNKNOWN, ctxt_pP->instance, msg_p);
-  }
-# else
-  {
-    char        message_string[30000];
-    size_t      message_string_size;
-
-    if ((message_string_size = xer_sprint(message_string, sizeof(message_string), &asn_DEF_DL_DCCH_Message, (void *)dl_dcch_msg)) > 0) {
-      msg_p = itti_alloc_new_message_sized (TASK_RRC_UE, RRC_DL_DCCH, message_string_size + sizeof (IttiMsgText));
-      msg_p->ittiMsg.rrc_dl_dcch.size = message_string_size;
-      memcpy(&msg_p->ittiMsg.rrc_dl_dcch.text, message_string, message_string_size);
-
-      itti_send_msg_to_task(TASK_UNKNOWN, ctxt_pP->instance, msg_p);
-    }
-  }
-# endif
-#endif
 
   if (dl_dcch_msg->message.present == DL_DCCH_MessageType_PR_c1) {
 
@@ -2929,7 +2816,7 @@ int decode_BCCH_DLSCH_Message(
 {
   BCCH_DL_SCH_Message_t *bcch_message = NULL;
   SystemInformationBlockType1_t* sib1 = UE_rrc_inst[ctxt_pP->module_id].sib1[eNB_index];
-  int i;
+  
 
   VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME( VCD_SIGNAL_DUMPER_FUNCTIONS_UE_DECODE_BCCH, VCD_FUNCTION_IN );
 
@@ -2942,7 +2829,9 @@ int decode_BCCH_DLSCH_Message(
   }
 
   rrc_set_sub_state( ctxt_pP->module_id, RRC_SUB_STATE_IDLE_RECEIVING_SIB );
-
+  if ( LOG_DEBUGFLAG(DEBUG_ASN1) ) {
+    xer_fprint(stdout, &asn_DEF_BCCH_DL_SCH_Message,(void *)bcch_message );
+  }
   asn_dec_rval_t dec_rval = uper_decode_complete( NULL,
                             &asn_DEF_BCCH_DL_SCH_Message,
                             (void **)&bcch_message,
@@ -2953,42 +2842,15 @@ int decode_BCCH_DLSCH_Message(
     LOG_E( RRC, "[UE %"PRIu8"] Failed to decode BCCH_DLSCH_MESSAGE (%zu bits)\n",
            ctxt_pP->module_id,
            dec_rval.consumed );
-    for (i=0;i<Sdu_len;i++)
-      printf("%02x ",Sdu[i]);
-    printf("\n");
+    log_dump(RRC, Sdu, Sdu_len, LOG_DUMP_CHAR,"   Received bytes:\n" );
+
     // free the memory
     SEQUENCE_free( &asn_DEF_BCCH_DL_SCH_Message, (void*)bcch_message, 1 );
     VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME( VCD_SIGNAL_DUMPER_FUNCTIONS_UE_DECODE_BCCH, VCD_FUNCTION_OUT );
     return -1;
   }
 
-#if defined(ENABLE_ITTI)
-# if defined(DISABLE_ITTI_XER_PRINT)
-  {
-    MessageDef *msg_p;
 
-    msg_p = itti_alloc_new_message (TASK_RRC_UE, RRC_DL_BCCH_MESSAGE);
-    memcpy (&msg_p->ittiMsg, (void *) bcch_message, sizeof(RrcDlBcchMessage));
-
-    itti_send_msg_to_task (TASK_UNKNOWN, ctxt_pP->instance, msg_p);
-  }
-# else
-  {
-    char        message_string[15000];
-    size_t      message_string_size;
-
-    if ((message_string_size = xer_sprint(message_string, sizeof(message_string), &asn_DEF_BCCH_DL_SCH_Message, (void *)bcch_message)) > 0) {
-      MessageDef *msg_p;
-
-      msg_p = itti_alloc_new_message_sized (TASK_RRC_UE, RRC_DL_BCCH, message_string_size + sizeof (IttiMsgText));
-      msg_p->ittiMsg.rrc_dl_bcch.size = message_string_size;
-      memcpy(&msg_p->ittiMsg.rrc_dl_bcch.text, message_string, message_string_size);
-
-      itti_send_msg_to_task(TASK_UNKNOWN, ctxt_pP->instance, msg_p);
-    }
-  }
-# endif
-#endif
 
   if (bcch_message->message.present == BCCH_DL_SCH_MessageType_PR_c1) {
     switch (bcch_message->message.choice.c1.present) {

@@ -58,11 +58,9 @@
 # include "intertask_interface.h"
 #endif
 
-#if defined(LINK_ENB_PDCP_TO_GTPV1U)
-#  include "gtpv1u_eNB_task.h"
-#  include "gtpv1u.h"
-#endif
-
+#include "gtpv1u_eNB_task.h"
+#include "gtpv1u.h"
+#include "SIMULATION/ETH_TRANSPORT/proto.h"
 extern int otg_enabled;
 
 #include "common/ran_context.h"
@@ -79,6 +77,13 @@ extern RAN_CONTEXT_t RC;
 static int mbms_socket = -1;
 #endif
 
+
+/* pdcp module parameters and related functions*/
+static pdcp_params_t pdcp_params={0};
+
+uint64_t get_pdcp_optmask(void) {
+return pdcp_params.optmask;
+}
 //-----------------------------------------------------------------------------
 /*
  * If PDCP_UNIT_TEST is set here then data flow between PDCP and RLC is broken
@@ -725,36 +730,35 @@ pdcp_data_ind(
    * from its second byte (skipping 0th and 1st octets, i.e.
    * PDCP header)
    */
-#if defined(LINK_ENB_PDCP_TO_GTPV1U)
+  if (LINK_ENB_PDCP_TO_GTPV1U) {
 
-  if ((TRUE == ctxt_pP->enb_flag) && (FALSE == srb_flagP)) {
-    MSC_LOG_TX_MESSAGE(
-    		MSC_PDCP_ENB,
-    		MSC_GTPU_ENB,
-    		NULL,0,
-    		"0 GTPV1U_ENB_TUNNEL_DATA_REQ  ue %x rab %u len %u",
-    		ctxt_pP->rnti,
-    		rb_id + 4,
-    		sdu_buffer_sizeP - payload_offset);
-    //LOG_T(PDCP,"Sending to GTPV1U %d bytes\n", sdu_buffer_sizeP - payload_offset);
-    gtpu_buffer_p = itti_malloc(TASK_PDCP_ENB, TASK_GTPV1_U,
-                                sdu_buffer_sizeP - payload_offset + GTPU_HEADER_OVERHEAD_MAX);
-    AssertFatal(gtpu_buffer_p != NULL, "OUT OF MEMORY");
-    memcpy(&gtpu_buffer_p[GTPU_HEADER_OVERHEAD_MAX], &sdu_buffer_pP->data[payload_offset], sdu_buffer_sizeP - payload_offset);
-    message_p = itti_alloc_new_message(TASK_PDCP_ENB, GTPV1U_ENB_TUNNEL_DATA_REQ);
-    AssertFatal(message_p != NULL, "OUT OF MEMORY");
-    GTPV1U_ENB_TUNNEL_DATA_REQ(message_p).buffer       = gtpu_buffer_p;
-    GTPV1U_ENB_TUNNEL_DATA_REQ(message_p).length       = sdu_buffer_sizeP - payload_offset;
-    GTPV1U_ENB_TUNNEL_DATA_REQ(message_p).offset       = GTPU_HEADER_OVERHEAD_MAX;
-    GTPV1U_ENB_TUNNEL_DATA_REQ(message_p).rnti         = ctxt_pP->rnti;
-    GTPV1U_ENB_TUNNEL_DATA_REQ(message_p).rab_id       = rb_id + 4;
-    itti_send_msg_to_task(TASK_GTPV1_U, INSTANCE_DEFAULT, message_p);
-    packet_forwarded = TRUE;    
+    if ((TRUE == ctxt_pP->enb_flag) && (FALSE == srb_flagP)) {
+      MSC_LOG_TX_MESSAGE(
+  		  MSC_PDCP_ENB,
+  		  MSC_GTPU_ENB,
+  		  NULL,0,
+  		  "0 GTPV1U_ENB_TUNNEL_DATA_REQ  ue %x rab %u len %u",
+  		  ctxt_pP->rnti,
+  		  rb_id + 4,
+  		  sdu_buffer_sizeP - payload_offset);
+      //LOG_T(PDCP,"Sending to GTPV1U %d bytes\n", sdu_buffer_sizeP - payload_offset);
+      gtpu_buffer_p = itti_malloc(TASK_PDCP_ENB, TASK_GTPV1_U,
+  				  sdu_buffer_sizeP - payload_offset + GTPU_HEADER_OVERHEAD_MAX);
+      AssertFatal(gtpu_buffer_p != NULL, "OUT OF MEMORY");
+      memcpy(&gtpu_buffer_p[GTPU_HEADER_OVERHEAD_MAX], &sdu_buffer_pP->data[payload_offset], sdu_buffer_sizeP - payload_offset);
+      message_p = itti_alloc_new_message(TASK_PDCP_ENB, GTPV1U_ENB_TUNNEL_DATA_REQ);
+      AssertFatal(message_p != NULL, "OUT OF MEMORY");
+      GTPV1U_ENB_TUNNEL_DATA_REQ(message_p).buffer	 = gtpu_buffer_p;
+      GTPV1U_ENB_TUNNEL_DATA_REQ(message_p).length	 = sdu_buffer_sizeP - payload_offset;
+      GTPV1U_ENB_TUNNEL_DATA_REQ(message_p).offset	 = GTPU_HEADER_OVERHEAD_MAX;
+      GTPV1U_ENB_TUNNEL_DATA_REQ(message_p).rnti	 = ctxt_pP->rnti;
+      GTPV1U_ENB_TUNNEL_DATA_REQ(message_p).rab_id	 = rb_id + 4;
+      itti_send_msg_to_task(TASK_GTPV1_U, INSTANCE_DEFAULT, message_p);
+      packet_forwarded = TRUE;    
+    }
+  } else {
+    packet_forwarded = FALSE;
   }
-  
-#else
-  packet_forwarded = FALSE;
-#endif
 
 #ifdef MBMS_MULTICAST_OUT
   if ((MBMS_flagP != 0) && (mbms_socket != -1)) {
@@ -790,13 +794,13 @@ pdcp_data_ind(
       // set ((pdcp_data_ind_header_t *) new_sdu_p->data)->inst for IP layer here
       if (ctxt_pP->enb_flag == ENB_FLAG_NO) {
         ((pdcp_data_ind_header_t *) new_sdu_p->data)->rb_id = rb_id;
-#if defined(ENABLE_USE_MME)
+        if (EPC_MODE_ENABLED) {
         /* for the UE compiled in S1 mode, we need 1 here
          * for the UE compiled in noS1 mode, we need 0
          * TODO: be sure of this
          */
-        ((pdcp_data_ind_header_t*) new_sdu_p->data)->inst  = 1;
-#endif
+          ((pdcp_data_ind_header_t*) new_sdu_p->data)->inst  = 1;
+        }
       } else {
         ((pdcp_data_ind_header_t*) new_sdu_p->data)->rb_id = rb_id + (ctxt_pP->module_id * maxDRB);
       }
@@ -1020,11 +1024,7 @@ pdcp_run (
 #endif
 
   // IP/NAS -> PDCP traffic : TX, read the pkt from the upper layer buffer
-#if defined(LINK_ENB_PDCP_TO_GTPV1U)
-
-  if (ctxt_pP->enb_flag == ENB_FLAG_NO)
-#endif
-  {
+  if (LINK_ENB_PDCP_TO_GTPV1U && ctxt_pP->enb_flag == ENB_FLAG_NO) {
     pdcp_fifo_read_input_sdus(ctxt_pP);
   }
 
@@ -1923,43 +1923,18 @@ rrc_pdcp_config_req (
 
 //-----------------------------------------------------------------------------
  
-int
-pdcp_module_init (
-  void
-)
-//-----------------------------------------------------------------------------
-{
- 
-#ifdef PDCP_USE_RT_FIFO
-  int ret;
-
-  ret=rtf_create(PDCP2NW_DRIVER_FIFO,32768);
-
-  if (ret < 0) {
-    LOG_E(PDCP, "Cannot create PDCP2NW_DRIVER_FIFO fifo %d (ERROR %d)\n", PDCP2NW_DRIVER_FIFO, ret);
-    return -1;
+void pdcp_module_init( int noS1 ) {
+  if (!noS1) {
+    printf("S1\n\n\n");
+    pdcp_params.optmask = pdcp_params.optmask | LINK_ENB_PDCP_TO_GTPV1U_BIT ;
   } else {
-    LOG_D(PDCP, "Created PDCP2NAS fifo %d\n", PDCP2NW_DRIVER_FIFO);
-    rtf_reset(PDCP2NW_DRIVER_FIFO);
+    printf("noS1, PDCP netlink\n\n\n");
+    pdcp_params.optmask = pdcp_params.optmask | PDCP_USE_NETLINK_BIT | LINK_ENB_PDCP_TO_IP_DRIVER_BIT ;
+    netlink_init();
+    if (PDCP_USE_NETLINK_QUEUES) {
+//     pdcp_netlink_init();
+    }
   }
-
-  ret=rtf_create(NW_DRIVER2PDCP_FIFO,32768);
-
-  if (ret < 0) {
-    LOG_E(PDCP, "Cannot create NW_DRIVER2PDCP_FIFO fifo %d (ERROR %d)\n", NW_DRIVER2PDCP_FIFO, ret);
-
-    return -1;
-  } else {
-    LOG_D(PDCP, "Created NW_DRIVER2PDCP_FIFO fifo %d\n", NW_DRIVER2PDCP_FIFO);
-    rtf_reset(NW_DRIVER2PDCP_FIFO);
-  }
-
-  pdcp_2_nas_irq = 0;
-  pdcp_input_sdu_remaining_size_to_read=0;
-  pdcp_input_sdu_size_read=0;
-#endif
-
-  return 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -1993,10 +1968,7 @@ pdcp_free (
 void pdcp_module_cleanup (void)
 //-----------------------------------------------------------------------------
 {
-#ifdef PDCP_USE_RT_FIFO
-  rtf_destroy(NW_DRIVER2PDCP_FIFO);
-  rtf_destroy(PDCP2NW_DRIVER_FIFO);
-#endif
+
 }
 
 //-----------------------------------------------------------------------------
@@ -2107,6 +2079,3 @@ void pdcp_layer_cleanup (void)
 #endif
 }
 
-#ifdef PDCP_USE_RT_FIFO
-EXPORT_SYMBOL(pdcp_2_nas_irq);
-#endif //PDCP_USE_RT_FIFO

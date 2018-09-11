@@ -27,7 +27,6 @@
  * \email: lionel.gauthier@eurecom.fr
  */
 
-#if defined(ENABLE_USE_MME)
 # include "rrc_defs.h"
 # include "rrc_extern.h"
 # include "RRC/LTE/MESSAGES/asn1_msg.h"
@@ -98,4 +97,3 @@ rrc_eNB_process_GTPV1U_CREATE_TUNNEL_RESP(
     return -1;
   }
 }
-#endif

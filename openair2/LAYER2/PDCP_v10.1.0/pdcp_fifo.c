@@ -86,10 +86,9 @@ unsigned char pdcp_read_state_g = 0;
 
 extern Packet_OTG_List_t *otg_pdcp_buffer;
 
-#if defined(LINK_ENB_PDCP_TO_GTPV1U)
 #  include "gtpv1u_eNB_task.h"
 #  include "gtpv1u_eNB_defs.h"
-#endif
+
 
 extern int gtpv1u_new_data_req( uint8_t  enb_module_idP, rnti_t   ue_rntiP, uint8_t  rab_idP, uint8_t *buffer_pP, uint32_t buf_lenP, uint32_t buf_offsetP);
 
@@ -155,9 +154,7 @@ int pdcp_fifo_flush_sdus(const protocol_ctxt_t* const  ctxt_pP)
    int              bytes_wrote      = 0;
    int              pdcp_nb_sdu_sent = 0;
    uint8_t          cont             = 1;
-#if defined(LINK_ENB_PDCP_TO_GTPV1U)
-   //MessageDef      *message_p        = NULL;
-#endif
+
 
    VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME( VCD_SIGNAL_DUMPER_FUNCTIONS_PDCP_FIFO_FLUSH, 1 );
    while (sdu_p && cont) {
@@ -171,29 +168,28 @@ int pdcp_fifo_flush_sdus(const protocol_ctxt_t* const  ctxt_pP)
       ((pdcp_data_ind_header_t *)(sdu_p->data))->inst = 0;
 #endif
 
-#if defined(LINK_ENB_PDCP_TO_GTPV1U)
+      if (LINK_ENB_PDCP_TO_GTPV1U) {
 
-      if (ctxt_pP->enb_flag) {
-         AssertFatal(0, "Now execution should not go here");
-         LOG_D(PDCP,"Sending to GTPV1U %d bytes\n", ((pdcp_data_ind_header_t *)(sdu_p->data))->data_size);
-         gtpv1u_new_data_req(
-               ctxt_pP->module_id, //gtpv1u_data_t *gtpv1u_data_p,
-               ctxt_pP->rnti,//rb_id/maxDRB, TO DO UE ID
-               ((pdcp_data_ind_header_t *)(sdu_p->data))->rb_id + 4,
-               &(((uint8_t *) sdu_p->data)[sizeof (pdcp_data_ind_header_t)]),
-               ((pdcp_data_ind_header_t *)(sdu_p->data))->data_size,
-               0);
+  	if (ctxt_pP->enb_flag) {
+  	   AssertFatal(0, "Now execution should not go here");
+  	   LOG_D(PDCP,"Sending to GTPV1U %d bytes\n", ((pdcp_data_ind_header_t *)(sdu_p->data))->data_size);
+  	   gtpv1u_new_data_req(
+  		 ctxt_pP->module_id, //gtpv1u_data_t *gtpv1u_data_p,
+  		 ctxt_pP->rnti,//rb_id/maxDRB, TO DO UE ID
+  		 ((pdcp_data_ind_header_t *)(sdu_p->data))->rb_id + 4,
+  		 &(((uint8_t *) sdu_p->data)[sizeof (pdcp_data_ind_header_t)]),
+  		 ((pdcp_data_ind_header_t *)(sdu_p->data))->data_size,
+  		 0);
 
-         list_remove_head (&pdcp_sdu_list);
-         free_mem_block (sdu_p, __func__);
-         cont = 1;
-         pdcp_nb_sdu_sent += 1;
-         sdu_p = list_get_head (&pdcp_sdu_list);
-         LOG_D(OTG,"After  GTPV1U\n");
-         continue; // loop again
-      }
-
-#endif /* defined(ENABLE_USE_MME) */
+  	   list_remove_head (&pdcp_sdu_list);
+  	   free_mem_block (sdu_p, __func__);
+  	   cont = 1;
+  	   pdcp_nb_sdu_sent += 1;
+  	   sdu_p = list_get_head (&pdcp_sdu_list);
+  	   LOG_D(OTG,"After  GTPV1U\n");
+  	   continue; // loop again
+  	}
+      } /* defined(LINK_ENB_PDCP_TO_GTPV1U) */
 #ifdef PDCP_DEBUG
       LOG_D(PDCP, "PDCP->IP TTI %d INST %d: Preparing %d Bytes of data from rab %d to Nas_mesh\n",
             ctxt_pP->frame, ((pdcp_data_ind_header_t *)(sdu_p->data))->inst,
@@ -238,22 +234,12 @@ int pdcp_fifo_flush_sdus(const protocol_ctxt_t* const  ctxt_pP)
             pdcp_output_header_bytes_to_write = sizeof (pdcp_data_ind_header_t);
          }
 
-#ifdef PDCP_USE_RT_FIFO
-         bytes_wrote = rtf_put (PDCP2PDCP_USE_RT_FIFO,
-               &(((uint8_t *) sdu->data)[sizeof (pdcp_data_ind_header_t) - pdcp_output_header_bytes_to_write]),
-               pdcp_output_header_bytes_to_write);
-
-#else
-#ifdef PDCP_USE_NETLINK
-#ifdef LINUX
-         memcpy(NLMSG_DATA(nas_nlh_tx), &(((uint8_t *) sdu_p->data)[sizeof (pdcp_data_ind_header_t) - pdcp_output_header_bytes_to_write]),
-               pdcp_output_header_bytes_to_write);
-         nas_nlh_tx->nlmsg_len = pdcp_output_header_bytes_to_write;
-#endif //LINUX
-#endif //PDCP_USE_NETLINK
-
+         if (PDCP_USE_NETLINK) {
+           memcpy(NLMSG_DATA(nas_nlh_tx), &(((uint8_t *) sdu_p->data)[sizeof (pdcp_data_ind_header_t) - pdcp_output_header_bytes_to_write]),
+                 pdcp_output_header_bytes_to_write);
+           nas_nlh_tx->nlmsg_len = pdcp_output_header_bytes_to_write;
+         } //PDCP_USE_NETLINK
          bytes_wrote = pdcp_output_header_bytes_to_write;
-#endif //PDCP_USE_RT_FIFO
 
 #ifdef PDCP_DEBUG
          LOG_D(PDCP, "Frame %d Sent %d Bytes of header to Nas_mesh\n",
@@ -268,53 +254,46 @@ int pdcp_fifo_flush_sdus(const protocol_ctxt_t* const  ctxt_pP)
                pdcp_output_sdu_bytes_to_write = ((pdcp_data_ind_header_t *) sdu_p->data)->data_size;
                AssertFatal(pdcp_output_sdu_bytes_to_write >= 0, "invalid data_size!");
 
-#ifdef PDCP_USE_RT_FIFO
-               bytes_wrote = rtf_put (PDCP2PDCP_USE_RT_FIFO, &(sdu->data[sizeof (pdcp_data_ind_header_t)]), pdcp_output_sdu_bytes_to_write);
-#else
-
-#ifdef PDCP_USE_NETLINK
-#ifdef LINUX
-          memcpy(NLMSG_DATA(nas_nlh_tx)+sizeof(pdcp_data_ind_header_t), &(sdu_p->data[sizeof (pdcp_data_ind_header_t)]), pdcp_output_sdu_bytes_to_write);
-          nas_nlh_tx->nlmsg_len += pdcp_output_sdu_bytes_to_write;
-          VCD_SIGNAL_DUMPER_DUMP_VARIABLE_BY_NAME( VCD_SIGNAL_DUMPER_VARIABLES_UE_PDCP_FLUSH_SIZE, pdcp_output_sdu_bytes_to_write);
-          VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME( VCD_SIGNAL_DUMPER_FUNCTIONS_PDCP_FIFO_FLUSH_BUFFER, 1 );
+          if (PDCP_USE_NETLINK) {
+            memcpy(NLMSG_DATA(nas_nlh_tx)+sizeof(pdcp_data_ind_header_t), &(sdu_p->data[sizeof (pdcp_data_ind_header_t)]), pdcp_output_sdu_bytes_to_write);
+            nas_nlh_tx->nlmsg_len += pdcp_output_sdu_bytes_to_write;
+            VCD_SIGNAL_DUMPER_DUMP_VARIABLE_BY_NAME( VCD_SIGNAL_DUMPER_VARIABLES_UE_PDCP_FLUSH_SIZE, pdcp_output_sdu_bytes_to_write);
+            VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME( VCD_SIGNAL_DUMPER_FUNCTIONS_PDCP_FIFO_FLUSH_BUFFER, 1 );
 #ifdef UE_NAS_USE_TUN
-          ret = write(nas_sock_fd[ctxt_pP->module_id], &(sdu_p->data[sizeof(pdcp_data_ind_header_t)]), pdcp_output_sdu_bytes_to_write);
+            ret = write(nas_sock_fd[ctxt_pP->module_id], &(sdu_p->data[sizeof(pdcp_data_ind_header_t)]), pdcp_output_sdu_bytes_to_write);
 #else
-          ret = sendmsg(nas_sock_fd,&nas_msg_tx,0);
+            ret = sendmsg(nas_sock_fd,&nas_msg_tx,0);
 #endif
-          VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME( VCD_SIGNAL_DUMPER_FUNCTIONS_PDCP_FIFO_FLUSH_BUFFER, 0 );
-          VCD_SIGNAL_DUMPER_DUMP_VARIABLE_BY_NAME( VCD_SIGNAL_DUMPER_VARIABLES_UE_PDCP_FLUSH_ERR, ret );
+            VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME( VCD_SIGNAL_DUMPER_FUNCTIONS_PDCP_FIFO_FLUSH_BUFFER, 0 );
+            VCD_SIGNAL_DUMPER_DUMP_VARIABLE_BY_NAME( VCD_SIGNAL_DUMPER_VARIABLES_UE_PDCP_FLUSH_ERR, ret );
 
-          if (ret<0) {
-            LOG_E(PDCP, "[PDCP_FIFOS] sendmsg returns %d (errno: %d)\n", ret, errno);
-      	    MSC_LOG_TX_MESSAGE_FAILED(
-      	      (ctxt_pP->enb_flag == ENB_FLAG_YES) ? MSC_PDCP_ENB:MSC_PDCP_UE,
-      	      (ctxt_pP->enb_flag == ENB_FLAG_YES) ? MSC_IP_ENB:MSC_IP_UE,
-      	      NULL,
-      	      0,
-      	      MSC_AS_TIME_FMT" DATA-IND RNTI %"PRIx16" rb %u size %u",
-      	      MSC_AS_TIME_ARGS(ctxt_pP),
-      	      ((pdcp_data_ind_header_t *)(sdu_p->data))->rb_id,
-      	      ((pdcp_data_ind_header_t *)(sdu_p->data))->data_size);
-	    AssertFatal(1==0,"sendmsg failed for nas_sock_fd\n");
-            break;
-          } else {
-        	  MSC_LOG_TX_MESSAGE(
-        	    (ctxt_pP->enb_flag == ENB_FLAG_YES) ? MSC_PDCP_ENB:MSC_PDCP_UE,
-        	    (ctxt_pP->enb_flag == ENB_FLAG_YES) ? MSC_IP_ENB:MSC_IP_UE,
-        	    NULL,
-        	    0,
-        	    MSC_AS_TIME_FMT" DATA-IND RNTI %"PRIx16" rb %u size %u",
-        	    MSC_AS_TIME_ARGS(ctxt_pP),
-        	    ((pdcp_data_ind_header_t *)(sdu_p->data))->rb_id,
-        	    ((pdcp_data_ind_header_t *)(sdu_p->data))->data_size);
-          }
+            if (ret<0) {
+              LOG_E(PDCP, "[PDCP_FIFOS] sendmsg returns %d (errno: %d)\n", ret, errno);
+      	      MSC_LOG_TX_MESSAGE_FAILED(
+      	        (ctxt_pP->enb_flag == ENB_FLAG_YES) ? MSC_PDCP_ENB:MSC_PDCP_UE,
+      	        (ctxt_pP->enb_flag == ENB_FLAG_YES) ? MSC_IP_ENB:MSC_IP_UE,
+      	        NULL,
+      	        0,
+      	        MSC_AS_TIME_FMT" DATA-IND RNTI %"PRIx16" rb %u size %u",
+      	        MSC_AS_TIME_ARGS(ctxt_pP),
+      	        ((pdcp_data_ind_header_t *)(sdu_p->data))->rb_id,
+      	        ((pdcp_data_ind_header_t *)(sdu_p->data))->data_size);
+	      AssertFatal(1==0,"sendmsg failed for nas_sock_fd\n");
+              break;
+            } else {
+          	    MSC_LOG_TX_MESSAGE(
+        	      (ctxt_pP->enb_flag == ENB_FLAG_YES) ? MSC_PDCP_ENB:MSC_PDCP_UE,
+        	      (ctxt_pP->enb_flag == ENB_FLAG_YES) ? MSC_IP_ENB:MSC_IP_UE,
+        	      NULL,
+        	      0,
+        	      MSC_AS_TIME_FMT" DATA-IND RNTI %"PRIx16" rb %u size %u",
+        	      MSC_AS_TIME_ARGS(ctxt_pP),
+        	      ((pdcp_data_ind_header_t *)(sdu_p->data))->rb_id,
+        	      ((pdcp_data_ind_header_t *)(sdu_p->data))->data_size);
+            }
 
-#endif // LINUX
-#endif //PDCP_USE_NETLINK
-               bytes_wrote= pdcp_output_sdu_bytes_to_write;
-#endif // PDCP_USE_RT_FIFO
+          } //PDCP_USE_NETLINK
+          bytes_wrote= pdcp_output_sdu_bytes_to_write;
 
 #ifdef PDCP_DEBUG
                LOG_D(PDCP, "PDCP->IP Frame %d INST %d: Sent %d Bytes of data from rab %d to higher layers\n",
@@ -357,13 +336,7 @@ int pdcp_fifo_flush_sdus(const protocol_ctxt_t* const  ctxt_pP)
          }
       } else {
          // continue writing sdu
-#ifdef PDCP_USE_RT_FIFO
-         bytes_wrote = rtf_put (PDCP2PDCP_USE_RT_FIFO,
-               (uint8_t *) (&(sdu_p->data[sizeof (pdcp_data_ind_header_t) + ((pdcp_data_ind_header_t *) sdu_p->data)->data_size - pdcp_output_sdu_bytes_to_write])),
-               pdcp_output_sdu_bytes_to_write);
-#else  // PDCP_USE_RT_FIFO
          bytes_wrote = pdcp_output_sdu_bytes_to_write;
-#endif  // PDCP_USE_RT_FIFO
          LOG_D(PDCP, "THINH 2 bytes_wrote = %d\n", bytes_wrote);
 
          if (bytes_wrote > 0) {
@@ -387,25 +360,6 @@ int pdcp_fifo_flush_sdus(const protocol_ctxt_t* const  ctxt_pP)
    }
    VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME( VCD_SIGNAL_DUMPER_FUNCTIONS_PDCP_FIFO_FLUSH, 0 );
 
-#ifdef PDCP_USE_RT_FIFO
-
-   if ((pdcp_nb_sdu_sent)) {
-      if ((pdcp_2_nas_irq > 0)) {
-#ifdef PDCP_DEBUG
-         LOG_D(PDCP, "Frame %d : Trigger NAS RX interrupt\n",
-               ctxt_pP->frame);
-#endif //PDCP_DEBUG
-         rt_pend_linux_srq (pdcp_2_nas_irq);
-
-      } else {
-         LOG_E(PDCP, "Frame %d: ERROR IF IP STACK WANTED : NOTIF PACKET(S) pdcp_2_nas_irq not initialized : %d\n",
-               ctxt_pP->frame,
-               pdcp_2_nas_irq);
-      }
-   }
-
-#endif  //PDCP_USE_RT_FIFO
-
 #ifdef PDCP_SDU_FLUSH_LOCK
    if (pthread_mutex_unlock(&mtex)) exit_fun("PDCP_SDU_FLUSH_LOCK unlock error!");
 #endif
@@ -421,7 +375,7 @@ int pdcp_fifo_read_input_sdus (const protocol_ctxt_t* const  ctxt_pP)
   hash_key_t key = HASHTABLE_NOT_A_KEY_VALUE;
   hashtable_rc_t h_rc;
   pdcp_t* pdcp_p = NULL;
-  int len;
+  int len=0;
   rb_id_t rab_id = DEFAULT_RAB_ID;
 
   do {
@@ -476,7 +430,7 @@ int pdcp_fifo_read_input_sdus (const protocol_ctxt_t* const  ctxt_pP)
 
 #else /* UE_NAS_USE_TUN */
 
-#ifdef PDCP_USE_NETLINK
+   if(PDCP_USE_NETLINK) {
    protocol_ctxt_t                ctxt_cpy = *ctxt_pP;
    protocol_ctxt_t                ctxt;
    hash_key_t                     key       = HASHTABLE_NOT_A_KEY_VALUE;
@@ -501,7 +455,7 @@ int pdcp_fifo_read_input_sdus (const protocol_ctxt_t* const  ctxt_pP)
    pc5s_header_t *pc5s_header;
 #endif
 
-# if defined(PDCP_USE_NETLINK_QUEUES)
+   if (PDCP_USE_NETLINK_QUEUES) {
    rb_id_t                        rab_id    = 0;
 
    pdcp_transmission_mode_t       pdcp_mode = PDCP_TRANSMISSION_MODE_UNKNOWN;
@@ -511,7 +465,7 @@ int pdcp_fifo_read_input_sdus (const protocol_ctxt_t* const  ctxt_pP)
       DevAssert(data_p != NULL);
       rab_id = data_p->pdcp_read_header.rb_id % maxDRB;
       // ctxt_pP->rnti is NOT_A_RNTI
-      ctxt_cpy.rnti = pdcp_module_id_to_rnti[ctxt_cpy.module_id][data_p->pdcp_read_header.inst];
+      //ctxt_cpy.rnti = pdcp_module_id_to_rnti[ctxt_cpy.module_id][data_p->pdcp_read_header.inst];
       key = PDCP_COLL_KEY_VALUE(ctxt_pP->module_id, ctxt_cpy.rnti, ctxt_pP->enb_flag, rab_id, SRB_FLAG_NO);
       h_rc = hashtable_get(pdcp_coll_p, key, (void**)&pdcp_p);
 
@@ -579,10 +533,10 @@ int pdcp_fifo_read_input_sdus (const protocol_ctxt_t* const  ctxt_pP)
          LOG_D(PDCP, "eNB Try Forcing send on DEFAULT_RAB_ID first_ue_local %u nb_ue_local %u\n", oai_emulation.info.first_ue_local, oai_emulation.info.nb_ue_local);
 
          for (ue_id = 0; ue_id < NB_UE_INST; ue_id++) {
-            if (pdcp_module_id_to_rnti[ctxt_cpy.module_id][ue_id] != NOT_A_RNTI) {
+//            if (pdcp_module_id_to_rnti[ctxt_cpy.module_id][ue_id] != NOT_A_RNTI) {
                LOG_D(PDCP, "eNB Try Forcing send on DEFAULT_RAB_ID UE %d\n", ue_id);
                ctxt.module_id     = ctxt_cpy.module_id;
-               ctxt.rnti          = ctxt_cpy.pdcp_module_id_to_rnti[ctxt_cpy.module_id][ue_id];
+//               ctxt.rnti          = pdcp_module_id_to_rnti[ctxt_cpy.module_id][ue_id];
                ctxt.frame         = ctxt_cpy.frame;
                ctxt.enb_flag      = ctxt_cpy.enb_flag;
 
@@ -599,7 +553,7 @@ int pdcp_fifo_read_input_sdus (const protocol_ctxt_t* const  ctxt_pP)
                      ,NULL, NULL
 #endif
                      );
-            }
+//            }
          }
       } else {
          LOG_D(PDCP, "Forcing send on DEFAULT_RAB_ID\n");
@@ -624,7 +578,7 @@ int pdcp_fifo_read_input_sdus (const protocol_ctxt_t* const  ctxt_pP)
    }
 
    return 0;
-# else /* PDCP_USE_NETLINK_QUEUES*/
+   } /* PDCP_USE_NETLINK_QUEUES*/
    int              len = 1;
    int  msg_len;
    rb_id_t          rab_id  = 0;
@@ -713,7 +667,7 @@ int pdcp_fifo_read_input_sdus (const protocol_ctxt_t* const  ctxt_pP)
             rab_id      = pc5s_header->rb_id % maxDRB;
             ctxt.rnti          = pdcp_UE_UE_module_id_to_rnti[ctxt.module_id];
          }
-#endif
+#endif // else OAI_EMU
 
          //UE
          if (!ctxt.enb_flag) {
@@ -774,10 +728,8 @@ int pdcp_fifo_read_input_sdus (const protocol_ctxt_t* const  ctxt_pP)
                         pc5s_header->data_size,
                         (unsigned char *)receive_buf,
                         PDCP_TRANSMISSION_MODE_DATA
-#if (RRC_VERSION >= MAKE_VERSION(14, 0, 0))
                         ,&pc5s_header->sourceL2Id
                         ,&pc5s_header->destinationL2Id
-#endif
                         );
                } else {
                   MSC_LOG_RX_DISCARDED_MESSAGE(
@@ -832,10 +784,8 @@ int pdcp_fifo_read_input_sdus (const protocol_ctxt_t* const  ctxt_pP)
                      pc5s_header->data_size,
                      (unsigned char *)receive_buf,
                      PDCP_TRANSMISSION_MODE_DATA
-#if (RRC_VERSION >= MAKE_VERSION(14, 0, 0))
                      ,&pc5s_header->sourceL2Id
                      ,&pc5s_header->destinationL2Id
-#endif
                      );
             }
          }
@@ -844,7 +794,7 @@ int pdcp_fifo_read_input_sdus (const protocol_ctxt_t* const  ctxt_pP)
       }
    }
 
-#endif
+#endif // (RRC_VERSION >= MAKE_VERSION(14, 0, 0))
 
    while ((len > 0) && (rlc_data_req_flag !=0))  {
       VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME( VCD_SIGNAL_DUMPER_FUNCTIONS_PDCP_FIFO_READ, 1 );
@@ -864,7 +814,6 @@ int pdcp_fifo_read_input_sdus (const protocol_ctxt_t* const  ctxt_pP)
 
             if (nas_nlh_rx->nlmsg_type == NLMSG_DONE) {
                LOG_D(PDCP, "[PDCP][NETLINK] RX NLMSG_DONE\n");
-               //return;
             }
 
             if (nas_nlh_rx->nlmsg_type == NLMSG_ERROR) {
@@ -932,7 +881,7 @@ int pdcp_fifo_read_input_sdus (const protocol_ctxt_t* const  ctxt_pP)
             ctxt.rnti          = pdcp_UE_UE_module_id_to_rnti[ctxt.module_id];
           }
 
-#endif
+#endif // else OAI_EMU
 
           if (ctxt.enb_flag) {
             if (rab_id != 0) {
@@ -1153,14 +1102,9 @@ int pdcp_fifo_read_input_sdus (const protocol_ctxt_t* const  ctxt_pP)
       }
       VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME( VCD_SIGNAL_DUMPER_FUNCTIONS_PDCP_FIFO_READ, 0 );
    }
-
-
-   return len;
-# endif
-#else // neither PDCP_USE_NETLINK nor PDCP_USE_RT_FIFO
-   return 0;
-#endif // PDCP_USE_NETLINK
+ } // PDCP_USE_NETLINK
 #endif /* #else UE_NAS_USE_TUN */
+ return 0;
 }
 
 

@@ -596,7 +596,6 @@ rrc_ue_process_securityModeCommand(
                 );
 */
 
-#if !defined(ENABLE_USE_MME)
 void rrc_eNB_emulation_notify_ue_module_id(
   const module_id_t ue_module_idP,
   const rnti_t      rntiP,
@@ -604,7 +603,6 @@ void rrc_eNB_emulation_notify_ue_module_id(
   const uint8_t     cell_identity_byte1P,
   const uint8_t     cell_identity_byte2P,
   const uint8_t     cell_identity_byte3P);
-#endif
 
 
 void
