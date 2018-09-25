@@ -25,13 +25,13 @@
 # include "common/utils/LOG/log.h"
 
 # ifdef OPENAIR2
-#   if defined(ENABLE_USE_MME)
-#     include "sctp_eNB_task.h"
-#     include "s1ap_eNB.h"
+
+//#     include "sctp_eNB_task.h"
+//#     include "s1ap_eNB.h"
 #     include "nas_ue_task.h"
-#     include "udp_eNB_task.h"
-#     include "gtpv1u_eNB_task.h"
-#   endif
+//#     include "udp_eNB_task.h"
+//#     include "gtpv1u_eNB_task.h"
+
 #   if ENABLE_RAL
 #     include "lteRALue.h"
 #     include "lteRALenb.h"
@@ -40,7 +40,7 @@
 # endif
 # include "enb_app.h"
 
-int create_tasks_ue(uint32_t ue_nb)
+int create_tasks_ue(uint32_t ue_nb, int32_t noS1)
 {
   LOG_D(ENB_APP, "%s(ue_nb:%d)\n", __FUNCTION__, ue_nb);
 
@@ -50,8 +50,9 @@ int create_tasks_ue(uint32_t ue_nb)
     return -1;
   }
 
-#      if defined(ENABLE_USE_MME)
-#      if defined(NAS_BUILT_IN_UE)
+//#      if defined(ENABLE_USE_MME)
+//#      if defined(NAS_BUILT_IN_UE)
+   if (!noS1) {
       if (ue_nb > 0) {
         nas_user_container_t *users = calloc(1, sizeof(*users));
         if (users == NULL) abort();
@@ -61,8 +62,9 @@ int create_tasks_ue(uint32_t ue_nb)
           return -1;
         }
       }
-#      endif
-#      endif
+   }
+//#      endif
+//#      endif
 
     if (ue_nb > 0) {
       if (itti_create_task (TASK_RRC_UE, rrc_ue_task, NULL) < 0) {

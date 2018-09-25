@@ -26,15 +26,14 @@
 //-----------------------------------------------------------------------------
 #include "platform_types.h"
 //-----------------------------------------------------------------------------
-#if ENABLE_ITTI
+
 # include "intertask_interface.h"
-#endif
 #include "assertions.h"
 #include "list.h"
 #include "rlc_am.h"
 #include "common/utils/LOG/log.h"
 
-#   if ENABLE_ITTI
+
 //-----------------------------------------------------------------------------
 void
 rlc_am_itti_display_status_ind_infos(
@@ -44,7 +43,6 @@ rlc_am_itti_display_status_ind_infos(
 {
   char                 message_string[1000];
   size_t               message_string_size = 0;
-  MessageDef          *msg_p;
 
   int num_nack;
 
@@ -62,17 +60,11 @@ rlc_am_itti_display_status_ind_infos(
       }
     }
 
-    message_string_size += sprintf(&message_string[message_string_size], "\n");
-
-    msg_p = itti_alloc_new_message_sized (ctxt_pP->enb_flag > 0 ? TASK_RLC_ENB:TASK_RLC_UE , RLC_AM_STATUS_PDU_IND, message_string_size + sizeof (IttiMsgText));
-    msg_p->ittiMsg.rlc_am_status_pdu_ind.size = message_string_size;
-    memcpy(&msg_p->ittiMsg.rlc_am_status_pdu_ind.text, message_string, message_string_size);
-
-    itti_send_msg_to_task(TASK_UNKNOWN, ctxt_pP->instance, msg_p);
+    LOG_D(RLC,"%s\n",message_string);
   }
 }
 
-#   endif
+
 
 //-----------------------------------------------------------------------------
 uint16_t rlc_am_read_bit_field(

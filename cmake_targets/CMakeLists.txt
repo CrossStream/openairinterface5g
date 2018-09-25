@@ -1244,7 +1244,6 @@ set(L2_SRC
   ${PDCP_DIR}/pdcp_primitives.c
   ${PDCP_DIR}/pdcp_util.c
   ${PDCP_DIR}/pdcp_security.c
-  ${PDCP_DIR}/pdcp_netlink.c
   ${RLC_AM_DIR}/rlc_am.c
   ${RLC_AM_DIR}/rlc_am_init.c
   ${RLC_AM_DIR}/rlc_am_timer_poll_retransmit.c
@@ -1289,7 +1288,6 @@ set(L2_SRC_UE
   ${PDCP_DIR}/pdcp_primitives.c
   ${PDCP_DIR}/pdcp_util.c
   ${PDCP_DIR}/pdcp_security.c
-  ${PDCP_DIR}/pdcp_netlink.c
   ${RLC_AM_DIR}/rlc_am.c
   ${RLC_AM_DIR}/rlc_am_init.c
   ${RLC_AM_DIR}/rlc_am_timer_poll_retransmit.c
@@ -1918,6 +1916,7 @@ add_executable(lte-softmodem
   ${OPENAIR_TARGETS}/RT/USER/lte-enb.c
   ${OPENAIR_TARGETS}/RT/USER/lte-ru.c
   ${OPENAIR_TARGETS}/RT/USER/lte-softmodem.c
+  ${OPENAIR_TARGETS}/RT/USER/lte-softmodem-common.c
   ${OPENAIR2_DIR}/ENB_APP/NB_IoT_interface.c
   ${OPENAIR1_DIR}/SIMULATION/TOOLS/taus.c
   ${OPENAIR_TARGETS}/COMMON/create_tasks.c
@@ -1929,6 +1928,7 @@ add_executable(lte-softmodem
   ${OPENAIR_DIR}/common/utils/utils.c
   ${OPENAIR_DIR}/common/utils/system.c
   ${GTPU_need_ITTI}
+  ${OPENAIR3_DIR}/GTPV1-U/gtpv1u_eNB_noS1.c
   ${XFORMS_SOURCE}
   ${XFORMS_SOURCE_SOFTMODEM}
   ${T_SOURCE}
@@ -1994,6 +1994,7 @@ add_executable(lte-uesoftmodem
   ${OPENAIR_TARGETS}/RT/USER/rt_wrapper.c
   ${OPENAIR_TARGETS}/RT/USER/lte-ue.c
   ${OPENAIR_TARGETS}/RT/USER/lte-uesoftmodem.c
+  ${OPENAIR_TARGETS}/RT/USER/lte-softmodem-common.c
   ${OPENAIR_TARGETS}/RT/USER/lte-ru.c
   ${OPENAIR_TARGETS}/RT/USER/rfsim.c
   ${OPENAIR1_DIR}/SIMULATION/TOOLS/taus.c

@@ -78,12 +78,13 @@
 #   include "UTIL/OSA/osa_defs.h"
 #endif
 
-#include "rrc_eNB_S1AP.h"
-#include "rrc_eNB_GTPV1U.h"
-#if defined(ENABLE_ITTI)
-#else
-#   include "../../S1AP/s1ap_eNB.h"
-#endif
+
+#   include "rrc_eNB_S1AP.h"
+#   include "rrc_eNB_GTPV1U.h"
+#   if defined(ENABLE_ITTI)
+#   else
+#      include "../../S1AP/s1ap_eNB.h"
+#   endif
 
 
 #include "pdcp.h"
@@ -1414,51 +1415,58 @@ rrc_eNB_process_RRCConnectionReestablishmentComplete(
   ue_context_pP->ue_context.Srb1.Active = 1;
   //ue_context_pP->ue_context.Srb2.Srb_info.Srb_id = 2;
 
-  if (EPC_MODE_ENABLED) { 
-    hashtable_rc_t    h_rc;
-    int               j;
-    rrc_ue_s1ap_ids_t* rrc_ue_s1ap_ids_p = NULL;
-    uint16_t ue_initial_id = ue_context_pP->ue_context.ue_initial_id;
-    uint32_t eNB_ue_s1ap_id = ue_context_pP->ue_context.eNB_ue_s1ap_id;
-    eNB_RRC_INST *rrc_instance_p = RC.rrc[ENB_INSTANCE_TO_MODULE_ID(ctxt_pP->instance)];
-    if (eNB_ue_s1ap_id > 0) {
-      h_rc = hashtable_get(rrc_instance_p->s1ap_id2_s1ap_ids, (hash_key_t)eNB_ue_s1ap_id, (void**)&rrc_ue_s1ap_ids_p);
-      if  (h_rc == HASH_TABLE_OK) {
-  	rrc_ue_s1ap_ids_p->ue_rnti = ctxt_pP->rnti;
+
+      hashtable_rc_t    h_rc;
+      int               j;
+      rrc_ue_s1ap_ids_t* rrc_ue_s1ap_ids_p = NULL;
+      uint16_t ue_initial_id = ue_context_pP->ue_context.ue_initial_id;
+      uint32_t eNB_ue_s1ap_id = ue_context_pP->ue_context.eNB_ue_s1ap_id;
+      eNB_RRC_INST *rrc_instance_p = RC.rrc[ENB_INSTANCE_TO_MODULE_ID(ctxt_pP->instance)];
+      if (eNB_ue_s1ap_id > 0) {
+        h_rc = hashtable_get(rrc_instance_p->s1ap_id2_s1ap_ids, (hash_key_t)eNB_ue_s1ap_id, (void**)&rrc_ue_s1ap_ids_p);
+       if  (h_rc == HASH_TABLE_OK) {
+    	rrc_ue_s1ap_ids_p->ue_rnti = ctxt_pP->rnti;
+        }
       }
-    }
-    if (ue_initial_id != 0) {
-      h_rc = hashtable_get(rrc_instance_p->initial_id2_s1ap_ids, (hash_key_t)ue_initial_id, (void**)&rrc_ue_s1ap_ids_p);
-      if  (h_rc == HASH_TABLE_OK) {
-  	rrc_ue_s1ap_ids_p->ue_rnti = ctxt_pP->rnti;
+      if (ue_initial_id != 0) {
+        h_rc = hashtable_get(rrc_instance_p->initial_id2_s1ap_ids, (hash_key_t)ue_initial_id, (void**)&rrc_ue_s1ap_ids_p);
+        if  (h_rc == HASH_TABLE_OK) {
+    	  rrc_ue_s1ap_ids_p->ue_rnti = ctxt_pP->rnti;
+        }
       }
-    }
 
-    gtpv1u_enb_create_tunnel_req_t  create_tunnel_req;
+      gtpv1u_enb_create_tunnel_req_t  create_tunnel_req;
 
-    /* Save e RAB information for later */
-    memset(&create_tunnel_req, 0 , sizeof(create_tunnel_req));
+      /* Save e RAB information for later */
+      memset(&create_tunnel_req, 0 , sizeof(create_tunnel_req));
 
-    for ( j = 0, i = 0; i < NB_RB_MAX; i++) {
-      if (ue_context_pP->ue_context.e_rab[i].status == E_RAB_STATUS_ESTABLISHED || ue_context_pP->ue_context.e_rab[i].status == E_RAB_STATUS_DONE) {
-  	create_tunnel_req.eps_bearer_id[j]	 = ue_context_pP->ue_context.e_rab[i].param.e_rab_id;
-  	create_tunnel_req.sgw_S1u_teid[j]	 = ue_context_pP->ue_context.e_rab[i].param.gtp_teid;
+      for ( j = 0, i = 0; i < NB_RB_MAX; i++) {
+        if (ue_context_pP->ue_context.e_rab[i].status == E_RAB_STATUS_ESTABLISHED || ue_context_pP->ue_context.e_rab[i].status == E_RAB_STATUS_DONE) {
+          create_tunnel_req.eps_bearer_id[j]	 = ue_context_pP->ue_context.e_rab[i].param.e_rab_id;
+          create_tunnel_req.sgw_S1u_teid[j]	 = ue_context_pP->ue_context.e_rab[i].param.gtp_teid;
 
-  	memcpy(&create_tunnel_req.sgw_addr[j],
+  	  memcpy(&create_tunnel_req.sgw_addr[j],
   	       &ue_context_pP->ue_context.e_rab[i].param.sgw_addr,
   	       sizeof(transport_layer_addr_t));
-  	j++;
+  	  j++;
+        }
       }
-    }
 
-    create_tunnel_req.rnti       = ctxt_pP->rnti; // warning put zero above
-    create_tunnel_req.num_tunnels    = j;
+      create_tunnel_req.rnti       = ctxt_pP->rnti; // warning put zero above
+      create_tunnel_req.num_tunnels    = j;
 
-    gtpv1u_update_s1u_tunnel(
+      if (EPC_MODE_ENABLED) {
+        gtpv1u_update_s1u_tunnel(
               ctxt_pP->instance,
               &create_tunnel_req,
               reestablish_rnti);
-  } /* EPC_MODE_ENABLED */
+      } else { /* EPC_MODE_ENABLED */
+       noS1_update_s1u_tunnel(
+                ctxt_pP->instance,
+                &create_tunnel_req,
+                reestablish_rnti);
+    }
+
   /* Update RNTI in ue_context */
   ue_context_pP->ue_id_rnti                    = ctxt_pP->rnti; // here ue_id_rnti is just a key, may be something else
   ue_context_pP->ue_context.rnti               = ctxt_pP->rnti;
@@ -5488,16 +5496,26 @@ rrc_eNB_process_RRCConnectionReconfigurationComplete(
           LOG_D(RRC,
                 "[eNB %d] Frame %d: Establish RLC UM Bidirectional, DRB %d Active\n",
                 ctxt_pP->module_id, ctxt_pP->frame, (int)DRB_configList->list.array[i]->drb_Identity);
-          if (PDCP_USE_NETLINK && (!LINK_ENB_PDCP_TO_GTPV1U)) {
+//          if (PDCP_USE_NETLINK && (!LINK_ENB_PDCP_TO_GTPV1U)) {
+            if (!EPC_MODE_ENABLED) {
+
+              gtpv1u_enb_create_tunnel_req_t  create_tunnel_req;
+              gtpv1u_enb_create_tunnel_resp_t create_tunnel_resp;
+              memset(&create_tunnel_req, 0 , sizeof(create_tunnel_req));
+              create_tunnel_req.rnti       = ue_context_pP->ue_context.rnti;
+              oip_ifup = noS1_create_s1u_tunnel(
+                    ctxt_pP->instance,
+                    &create_tunnel_req,
+                    &create_tunnel_resp);                 
           // can mean also IPV6 since ether -> ipv6 autoconf
-#   if !defined(OAI_NW_DRIVER_TYPE_ETHERNET) && !defined(EXMIMO) && !defined(OAI_USRP) && !defined(OAI_BLADERF) && !defined(ETHERNET)
-            LOG_I(OIP, "[eNB %d] trying to bring up the OAI interface oai%d\n",
-                  ctxt_pP->module_id,
-                  ctxt_pP->module_id);
-            oip_ifup = nas_config(
-                         ctxt_pP->module_id,   // interface index
-                         ctxt_pP->module_id + 1,   // thrid octet
-                         ctxt_pP->module_id + 1);  // fourth octet
+//#   if !defined(OAI_NW_DRIVER_TYPE_ETHERNET) && !defined(EXMIMO) && !defined(OAI_USRP) && !defined(OAI_BLADERF) && !defined(ETHERNET)
+//            LOG_I(OIP, "[eNB %d] trying to bring up the OAI interface oai%d\n",
+//                  ctxt_pP->module_id,
+//                  ctxt_pP->module_id);
+//            oip_ifup = nas_config(
+//                         ctxt_pP->module_id,   // interface index
+//                         ctxt_pP->module_id + 1,   // thrid octet
+//                         ctxt_pP->module_id + 1);  // fourth octet
 
             if (oip_ifup == 0) {    // interface is up --> send a config the DRB
               module_id_t ue_module_id; 
@@ -5507,18 +5525,18 @@ rrc_eNB_process_RRCConnectionReconfigurationComplete(
                     ctxt_pP->module_id, ctxt_pP->module_id,
                     (long int)((ue_context_pP->local_uid * maxDRB) + DRB_configList->list.array[i]->drb_Identity));
               ue_module_id = oai_emulation.info.eNB_ue_local_uid_to_ue_module_id[ctxt_pP->module_id][ue_context_pP->local_uid];
-              rb_conf_ipv4(0, //add
-                           ue_module_id,  //cx
-                           ctxt_pP->module_id,    //inst
-                           (ue_module_id * maxDRB) + DRB_configList->list.array[i]->drb_Identity, // RB
-                           0,    //dscp
-                           ipv4_address(ctxt_pP->module_id + 1, ctxt_pP->module_id + 1),  //saddr
-                           ipv4_address(ctxt_pP->module_id + 1, dest_ip_offset + ue_module_id + 1));  //daddr
+//              rb_conf_ipv4(0, //add
+//                           ue_module_id,  //cx
+//                           ctxt_pP->module_id,    //inst
+//                           (ue_module_id * maxDRB) + DRB_configList->list.array[i]->drb_Identity, // RB
+//                           0,    //dscp
+//                           ipv4_address(ctxt_pP->module_id + 1, ctxt_pP->module_id + 1),  //saddr
+//                           ipv4_address(ctxt_pP->module_id + 1, dest_ip_offset + ue_module_id + 1));  //daddr
               LOG_D(RRC, "[eNB %d] State = Attached (UE rnti %x module id %u)\n",
                     ctxt_pP->module_id, ue_context_pP->ue_context.rnti, ue_module_id);
             }
 
-#   endif
+//#   endif
           }
 
           LOG_D(RRC,
@@ -6605,7 +6623,7 @@ rrc_eNB_decode_dcch(
   		  PROTOCOL_RRC_CTXT_UE_ARGS(ctxt_pP),ul_dcch_msg->message.choice.c1.choice.rrcConnectionReconfigurationComplete.rrc_TransactionIdentifier);
   	  }
   	  ue_context_p->ue_context.reestablishment_xid = -1;
-        } else { /* EPC_MODE_ENABLED */
+        } else {
   	  dedicated_DRB = 1;
   	  ue_context_p->ue_context.Status = RRC_RECONFIGURED;
   	  LOG_I(RRC,
@@ -6628,9 +6646,7 @@ rrc_eNB_decode_dcch(
 #if defined(ENABLE_ITTI)
       if (EPC_MODE_ENABLED) {
 	if (dedicated_DRB == 1){
-//	  rrc_eNB_send_S1AP_E_RAB_SETUP_RESP(ctxt_pP,
-//					     ue_context_p,
-//					     ul_dcch_msg->message.choice.c1.choice.rrcConnectionReconfigurationComplete.rrc_TransactionIdentifier);
+
 if (ue_context_p->ue_context.nb_of_modify_e_rabs > 0) {
             rrc_eNB_send_S1AP_E_RAB_MODIFY_RESP(ctxt_pP,
                              ue_context_p,
@@ -6691,13 +6707,13 @@ if (ue_context_p->ue_context.nb_of_modify_e_rabs > 0) {
                }
              }
          }
-      } /* EPC_MODE_ENABLED */
-#else  // establish a dedicated bearer 
+  } /* else EPC_MODE_ENABLED */
+#else  // no ITTI establish a dedicated bearer 
       if (dedicated_DRB == 0 ) {
 	//	ue_context_p->ue_context.e_rab[0].status = E_RAB_STATUS_ESTABLISHED;
 	rrc_eNB_reconfigure_DRBs(ctxt_pP,ue_context_p);
       }
-#endif 
+#endif
       break;
 
     case UL_DCCH_MessageType__c1_PR_rrcConnectionReestablishmentComplete:
@@ -6970,10 +6986,13 @@ if (ue_context_p->ue_context.nb_of_modify_e_rabs > 0) {
       }
 
       if (EPC_MODE_ENABLED) {
+
+        if (EPC_MODE_ENABLED == 1) {
   	  rrc_eNB_send_S1AP_UE_CAPABILITIES_IND(ctxt_pP,
   						ue_context_p,
   						ul_dcch_msg);
-  	} else {
+  	}
+      } else {
   	ue_context_p->ue_context.nb_of_e_rabs = 1;
   	for (i = 0; i < ue_context_p->ue_context.nb_of_e_rabs; i++){
   	  ue_context_p->ue_context.e_rab[i].status = E_RAB_STATUS_NEW;
@@ -7250,36 +7269,42 @@ void *rrc_enb_process_itti_msg(void *notUsed) {
       break;
 
 
-
       /* Messages from S1AP */
     case S1AP_DOWNLINK_NAS:
-      rrc_eNB_process_S1AP_DOWNLINK_NAS(msg_p, msg_name_p, instance, &rrc_eNB_mui);
+
+        rrc_eNB_process_S1AP_DOWNLINK_NAS(msg_p, msg_name_p, instance, &rrc_eNB_mui);
       break;
 
     case S1AP_INITIAL_CONTEXT_SETUP_REQ:
-      rrc_eNB_process_S1AP_INITIAL_CONTEXT_SETUP_REQ(msg_p, msg_name_p, instance);
+ 
+        rrc_eNB_process_S1AP_INITIAL_CONTEXT_SETUP_REQ(msg_p, msg_name_p, instance);
       break;
 
     case S1AP_UE_CTXT_MODIFICATION_REQ:
-      rrc_eNB_process_S1AP_UE_CTXT_MODIFICATION_REQ(msg_p, msg_name_p, instance);
+
+        rrc_eNB_process_S1AP_UE_CTXT_MODIFICATION_REQ(msg_p, msg_name_p, instance);
       break;
 
     case S1AP_PAGING_IND:
       LOG_D(RRC, "[eNB %d] Received Paging message from S1AP: %s\n", instance, msg_name_p);
-      rrc_eNB_process_PAGING_IND(msg_p, msg_name_p, instance);
+
+        rrc_eNB_process_PAGING_IND(msg_p, msg_name_p, instance);
       break;
   
     case S1AP_E_RAB_SETUP_REQ: 
-      rrc_eNB_process_S1AP_E_RAB_SETUP_REQ(msg_p, msg_name_p, instance);
+
+        rrc_eNB_process_S1AP_E_RAB_SETUP_REQ(msg_p, msg_name_p, instance);
       LOG_D(RRC, "[eNB %d] Received the message %s\n", instance, msg_name_p);
       break;
 
     case S1AP_E_RAB_MODIFY_REQ:
-      rrc_eNB_process_S1AP_E_RAB_MODIFY_REQ(msg_p, msg_name_p, instance);
+ 
+        rrc_eNB_process_S1AP_E_RAB_MODIFY_REQ(msg_p, msg_name_p, instance);
       break;
 
     case S1AP_E_RAB_RELEASE_COMMAND:
-      rrc_eNB_process_S1AP_E_RAB_RELEASE_COMMAND(msg_p, msg_name_p, instance);
+ 
+        rrc_eNB_process_S1AP_E_RAB_RELEASE_COMMAND(msg_p, msg_name_p, instance);
       break;
     
     case S1AP_UE_CONTEXT_RELEASE_REQ:
@@ -7287,18 +7312,21 @@ void *rrc_enb_process_itti_msg(void *notUsed) {
       break;
 
     case S1AP_UE_CONTEXT_RELEASE_COMMAND:
-      rrc_eNB_process_S1AP_UE_CONTEXT_RELEASE_COMMAND(msg_p, msg_name_p, instance);
+
+        rrc_eNB_process_S1AP_UE_CONTEXT_RELEASE_COMMAND(msg_p, msg_name_p, instance);
       break;
 
     case GTPV1U_ENB_DELETE_TUNNEL_RESP:
+
       /* Nothing to do. Apparently everything is done in S1AP processing */
       //LOG_I(RRC, "[eNB %d] Received message %s, not processed because procedure not synched\n",
       //instance, msg_name_p);
-     if (rrc_eNB_get_ue_context(RC.rrc[instance], GTPV1U_ENB_DELETE_TUNNEL_RESP(msg_p).rnti)
-         && rrc_eNB_get_ue_context(RC.rrc[instance], GTPV1U_ENB_DELETE_TUNNEL_RESP(msg_p).rnti)->ue_context.ue_release_timer_rrc > 0) {
-        rrc_eNB_get_ue_context(RC.rrc[instance], GTPV1U_ENB_DELETE_TUNNEL_RESP(msg_p).rnti)->ue_context.ue_release_timer_rrc =
-        rrc_eNB_get_ue_context(RC.rrc[instance], GTPV1U_ENB_DELETE_TUNNEL_RESP(msg_p).rnti)->ue_context.ue_release_timer_thres_rrc;
-      }
+       if (rrc_eNB_get_ue_context(RC.rrc[instance], GTPV1U_ENB_DELETE_TUNNEL_RESP(msg_p).rnti)
+           && rrc_eNB_get_ue_context(RC.rrc[instance], GTPV1U_ENB_DELETE_TUNNEL_RESP(msg_p).rnti)->ue_context.ue_release_timer_rrc > 0) {
+          rrc_eNB_get_ue_context(RC.rrc[instance], GTPV1U_ENB_DELETE_TUNNEL_RESP(msg_p).rnti)->ue_context.ue_release_timer_rrc =
+          rrc_eNB_get_ue_context(RC.rrc[instance], GTPV1U_ENB_DELETE_TUNNEL_RESP(msg_p).rnti)->ue_context.ue_release_timer_thres_rrc;
+        }
+ 
       break;
 
       /* Messages from eNB app */
@@ -7607,7 +7635,7 @@ SL_CommConfig_r12_t rrc_eNB_get_sidelink_commTXPool( const protocol_ctxt_t* cons
    sl_CommConfig->commTxResources_r12->choice.setup.choice.scheduled_r12.sl_RNTI_r12.buf[1] = 0x01;//ctxt_pP->rnti;//rnti
    sl_CommConfig->commTxResources_r12->choice.setup.choice.scheduled_r12.sl_RNTI_r12.bits_unused = 0;
    sl_CommConfig->commTxResources_r12->choice.setup.choice.scheduled_r12.mcs_r12 = CALLOC(1,sizeof(*sl_CommConfig->commTxResources_r12->choice.setup.choice.scheduled_r12.mcs_r12));
-   //*sl_CommConfig_test->commTxResources_r12->choice.setup.choice.scheduled_r12.mcs_r12 = 12; //Msc
+   // *sl_CommConfig_test->commTxResources_r12->choice.setup.choice.scheduled_r12.mcs_r12 = 12; //Msc
    sl_CommConfig->commTxResources_r12->choice.setup.choice.scheduled_r12.mac_MainConfig_r12.retx_BSR_TimerSL = RetxBSR_Timer_r12_sf320; //MacConfig, for testing only
    //sl_CommConfig_test->commTxResources_r12->choice.setup.choice.scheduled_r12.sc_CommTxConfig_r12;
 
@@ -7727,13 +7755,12 @@ rrc_rx_tx(
           LOG_I(RRC,"Removing UE %x instance Because of UE_CONTEXT_RELEASE_COMMAND not received after %d ms from sending request\n",
                          ue_context_p->ue_context.rnti, ue_context_p->ue_context.ue_release_timer_thres_s1);
 //          ue_context_p->ue_context.ue_release_timer_s1 = 0;
-#if defined(ENABLE_USE_MME)
-#if defined(ENABLE_ITTI)
+      if (EPC_MODE_ENABLED) { 
           rrc_eNB_generate_RRCConnectionRelease(ctxt_pP, ue_context_p);
-#endif
-#else
+      } else {
+
           ue_to_be_removed = ue_context_p;
-#endif
+      }
           ue_context_p->ue_context.ue_release_timer_s1 = 0;
           break;
         }
@@ -7752,6 +7779,9 @@ rrc_rx_tx(
       }
        pthread_mutex_lock(&rrc_release_freelist);
       if(rrc_release_info.num_UEs > 0){
+        MessageDef *msg_complete_p = NULL;
+        MessageDef *msg_delete_tunnels_p = NULL;
+        int      e_rab;
         uint16_t release_total = 0;
         for(uint16_t release_num = 0;release_num < NUMBER_OF_UE_MAX;release_num++){
           if(rrc_release_info.RRC_release_ctrl[release_num].flag > 0){
@@ -7761,12 +7791,9 @@ rrc_rx_tx(
             (rrc_release_info.RRC_release_ctrl[release_num].rnti == ue_context_p->ue_context.rnti)){
            ue_context_p->ue_context.ue_release_timer_rrc = 1;
            ue_context_p->ue_context.ue_release_timer_thres_rrc = 100;
-#if defined(ENABLE_USE_MME)
-#if defined(ENABLE_ITTI)
-           int      e_rab;
-           MessageDef *msg_complete_p = NULL;
-           MessageDef *msg_delete_tunnels_p = NULL;
            uint32_t eNB_ue_s1ap_id = ue_context_p->ue_context.eNB_ue_s1ap_id;
+          if (EPC_MODE_ENABLED) {
+#if defined(ENABLE_ITTI)
            if(rrc_release_info.RRC_release_ctrl[release_num].flag == 4){
              MSC_LOG_TX_MESSAGE(
                     MSC_RRC_ENB,
@@ -7779,6 +7806,7 @@ rrc_rx_tx(
              itti_send_msg_to_task(TASK_S1AP, ctxt_pP->module_id, msg_complete_p);
            }
            MSC_LOG_TX_MESSAGE(MSC_RRC_ENB, MSC_GTPU_ENB, NULL,0, "0 GTPV1U_ENB_DELETE_TUNNEL_REQ rnti %x ", eNB_ue_s1ap_id);
+         } /* EPC_MODE_ENABLED */
            msg_delete_tunnels_p = itti_alloc_new_message(TASK_RRC_ENB, GTPV1U_ENB_DELETE_TUNNEL_REQ);
            memset(&GTPV1U_ENB_DELETE_TUNNEL_REQ(msg_delete_tunnels_p), 0, sizeof(GTPV1U_ENB_DELETE_TUNNEL_REQ(msg_delete_tunnels_p)));
            // do not wait response
@@ -7792,6 +7820,7 @@ rrc_rx_tx(
              ue_context_p->ue_context.enb_gtp_ebi[e_rab]  = 0;
            }
            itti_send_msg_to_task(TASK_GTPV1_U, ctxt_pP->module_id, msg_delete_tunnels_p);
+         if (EPC_MODE_ENABLED) {
            struct rrc_ue_s1ap_ids_s    *rrc_ue_s1ap_ids = NULL;
            rrc_ue_s1ap_ids = rrc_eNB_S1AP_get_ue_ids(
                   RC.rrc[ctxt_pP->module_id],
@@ -7803,50 +7832,50 @@ rrc_rx_tx(
                         rrc_ue_s1ap_ids);
            }
 #endif
-#endif
-           rrc_release_info.RRC_release_ctrl[release_num].flag = 0;
-           rrc_release_info.num_UEs--;
-           break;
-         }
-         if(release_total >= rrc_release_info.num_UEs)
-           break;
-         }
+         } /* EPC_MODE_ENABLED */
+	   rrc_release_info.RRC_release_ctrl[release_num].flag = 0;
+	   rrc_release_info.num_UEs--;
+	   break;
+	 }
+	 if(release_total >= rrc_release_info.num_UEs)
+	   break;
+	 }
        }
        pthread_mutex_unlock(&rrc_release_freelist);
 
       if (ue_context_p->ue_context.ue_reestablishment_timer>0) {
-        ue_context_p->ue_context.ue_reestablishment_timer++;
-        if (ue_context_p->ue_context.ue_reestablishment_timer >=
-            ue_context_p->ue_context.ue_reestablishment_timer_thres) {
-          LOG_I(RRC,"UE %d reestablishment_timer max\n",ue_context_p->ue_context.rnti);
-          ue_context_p->ue_context.ul_failure_timer = 20000;
-          ue_to_be_removed = ue_context_p;
-          ue_context_p->ue_context.ue_reestablishment_timer = 0;
-          break;
-        }
+	ue_context_p->ue_context.ue_reestablishment_timer++;
+	if (ue_context_p->ue_context.ue_reestablishment_timer >=
+	    ue_context_p->ue_context.ue_reestablishment_timer_thres) {
+	  LOG_I(RRC,"UE %d reestablishment_timer max\n",ue_context_p->ue_context.rnti);
+	  ue_context_p->ue_context.ul_failure_timer = 20000;
+	  ue_to_be_removed = ue_context_p;
+	  ue_context_p->ue_context.ue_reestablishment_timer = 0;
+	  break;
+	}
       }
 
       if (ue_context_p->ue_context.ue_release_timer>0) {
-	ue_context_p->ue_context.ue_release_timer++;
-	if (ue_context_p->ue_context.ue_release_timer >= 
-	    ue_context_p->ue_context.ue_release_timer_thres) {
-          LOG_I(RRC,"Removing UE %x instance\n",ue_context_p->ue_context.rnti);
-	  ue_to_be_removed = ue_context_p;
-          ue_context_p->ue_context.ue_release_timer = 0;
-	  break;
-	}
+      ue_context_p->ue_context.ue_release_timer++;
+      if (ue_context_p->ue_context.ue_release_timer >= 
+	  ue_context_p->ue_context.ue_release_timer_thres) {
+	  LOG_I(RRC,"Removing UE %x instance\n",ue_context_p->ue_context.rnti);
+	ue_to_be_removed = ue_context_p;
+	  ue_context_p->ue_context.ue_release_timer = 0;
+	break;
+      }
       }
     }
     if (ue_to_be_removed) {
       if(ue_to_be_removed->ue_context.ul_failure_timer >= 20000) {
-          ue_to_be_removed->ue_context.ue_release_timer_s1 = 1;
-          ue_to_be_removed->ue_context.ue_release_timer_thres_s1 = 100;
-          ue_to_be_removed->ue_context.ue_release_timer = 0;
-          ue_to_be_removed->ue_context.ue_reestablishment_timer = 0;
+	  ue_to_be_removed->ue_context.ue_release_timer_s1 = 1;
+	  ue_to_be_removed->ue_context.ue_release_timer_thres_s1 = 100;
+	  ue_to_be_removed->ue_context.ue_release_timer = 0;
+	  ue_to_be_removed->ue_context.ue_reestablishment_timer = 0;
       }
       rrc_eNB_free_UE(ctxt_pP->module_id,ue_to_be_removed);
       if(ue_to_be_removed->ue_context.ul_failure_timer >= 20000){
-        ue_to_be_removed->ue_context.ul_failure_timer = 0;
+	ue_to_be_removed->ue_context.ul_failure_timer = 0;
       }
     }
 

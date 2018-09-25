@@ -19,15 +19,21 @@
  *      contact@openairinterface.org
  */
 
-#ifndef CREATE_TASKS_H_
-#define CREATE_TASKS_H_
+/*! \file lte-softmodem-common.c
+ * \brief Top-level threads for eNodeB
+ * \author Nokia BellLabs France, francois Taburet
+ * \date 2012
+ * \version 0.1
+ * \company Eurecom
+ * \email: francois.taburet@nokia-bell-labs.com
+ * \note
+ * \warning
+ */
 
-#if defined(ENABLE_ITTI)
-/* External declaration of L2L1 task that depend on the target */
-extern void *l2l1_task(void *arg);
+#include "lte-softmodem.h"
 
-int create_tasks(uint32_t enb_nb, int32_t noS1);
-int create_tasks_ue(uint32_t ue_nb, int32_t noS1);
-#endif
+static softmodem_params_t softmodem_params;
 
-#endif /* CREATE_TASKS_H_ */
+uint64_t get_softmodem_optmask(void) {
+return softmodem_params.optmask;
+}

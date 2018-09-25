@@ -223,6 +223,9 @@ typedef struct {
 
 #define SOFTMODEM_NOS1            ( get_softmodem_optmask() & SOFTMODEM_NOS1_BIT)
 
+extern uint64_t get_softmodem_optmask(void);
+
+
 uint64_t get_pdcp_optmask(void);
 extern pthread_cond_t sync_cond;
 extern pthread_mutex_t sync_mutex;

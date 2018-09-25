@@ -799,6 +799,7 @@ typedef enum {
 /*-----------------------------------------------------------------------------------------------------------------------------------------------------------*/
 /* S1 interface configuration parameters section name */
 #define ENB_CONFIG_STRING_NETWORK_INTERFACES_CONFIG     "NETWORK_INTERFACES"
+#define ENB_CONFIG_STRING_NOS1_CONFIG                   "noS1"
 
 #define ENB_INTERFACE_NAME_FOR_S1_MME_IDX          0
 #define ENB_IPV4_ADDRESS_FOR_S1_MME_IDX            1

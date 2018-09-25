@@ -606,8 +606,8 @@ rlc_um_mac_data_request (const protocol_ctxt_t* const ctxt_pP, void *rlc_pP,cons
   	LOG_UI(RLC, "%s\n", message_string);
 
   	} /*LOG_DEBUGFLAG(DEBUG_RLC) */
-  	tb_p = tb_p->next;
       } /* MESSAGE_CHART_GENERATOR || LOG_DEBUGFLAG(DEBUG_RLC) */
+    tb_p = tb_p->next;
     } /* while (tb_p != NULL) */
   } /* if (data_req.data.nb_elements > 0) */
 
@@ -714,7 +714,7 @@ rlc_um_data_req (const protocol_ctxt_t* const ctxt_pP, void *rlc_pP, mem_block_t
                                PROTOCOL_RLC_AM_MSC_ARGS(ctxt_pP,rlc_p), rlc_p->buffer_occupancy);
     }
   }
-  LOG_W(RLC, PROTOCOL_RLC_UM_CTXT_FMT" BO %d , NB SDU %d\n",
+  LOG_T(RLC, PROTOCOL_RLC_UM_CTXT_FMT" BO %d , NB SDU %d\n",
         PROTOCOL_RLC_UM_CTXT_ARGS(ctxt_pP,rlc_p),
         rlc_p->buffer_occupancy,
         rlc_p->input_sdus.nb_elements);

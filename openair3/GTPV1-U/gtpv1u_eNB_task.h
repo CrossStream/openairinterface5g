@@ -21,9 +21,9 @@
 
 /*! \file gtpv1u_eNB_task.h
 * \brief
-* \author Lionel Gauthier
-* \company Eurecom
-* \email: lionel.gauthier@eurecom.fr
+* \author 
+* \company OpenCells and Nokia
+* \email: 
 */
 
 #ifndef GTPV1U_ENB_TASK_H_
@@ -39,16 +39,36 @@ gtpv1u_new_data_req(
   uint8_t *buffer,
   uint32_t buf_len,
   uint32_t buf_offset);*/
+#define NOS1_GTPU_TUNIF_NAME "oaiNoS1GTP"
+typedef struct {
+   int tunfd;
+} noS1_gtpv1u_task_struct_t;
+#ifdef ENB_TASK_MAIN
+noS1_gtpv1u_task_struct_t noS1_gtpv1u_task;
+#endif
 
 int   gtpv1u_eNB_init(void);
 void *gtpv1u_eNB_process_itti_msg(void*);
 void *gtpv1u_eNB_task(void *args);
+void *noS1_eNB_task(void *args);
+
+int
+noS1_create_s1u_tunnel(
+  const instance_t instanceP,
+  const gtpv1u_enb_create_tunnel_req_t *  const create_tunnel_req_pP,
+        gtpv1u_enb_create_tunnel_resp_t * const create_tunnel_resp_pP);
 
 int
 gtpv1u_create_s1u_tunnel(
   const instance_t instanceP,
   const gtpv1u_enb_create_tunnel_req_t *  const create_tunnel_req_pP,
         gtpv1u_enb_create_tunnel_resp_t * const create_tunnel_resp_pP);
+
+int
+noS1_update_s1u_tunnel(
+    const instance_t                              instanceP,
+    const gtpv1u_enb_create_tunnel_req_t * const  create_tunnel_req_pP,
+    const rnti_t                                  prior_rnti);
 
 int
 gtpv1u_update_s1u_tunnel(

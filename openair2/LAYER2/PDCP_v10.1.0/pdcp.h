@@ -394,9 +394,6 @@ void pdcp_module_init    (int noS1);
 void pdcp_module_cleanup (void);
 void pdcp_layer_init     (void);
 void pdcp_layer_cleanup  (void);
-
-int pdcp_netlink_init    (void);
-
 #define PDCP2NW_DRIVER_FIFO 21
 #define NW_DRIVER2PDCP_FIFO 22
 

@@ -1924,17 +1924,11 @@ rrc_pdcp_config_req (
 //-----------------------------------------------------------------------------
  
 void pdcp_module_init( int noS1 ) {
-  if (!noS1) {
-    printf("S1\n\n\n");
+
+    LOG_I(PDCP, "pdcp init, noS1: %i\n",noS1);
     pdcp_params.optmask = pdcp_params.optmask | LINK_ENB_PDCP_TO_GTPV1U_BIT ;
-  } else {
-    printf("noS1, PDCP netlink\n\n\n");
-    pdcp_params.optmask = pdcp_params.optmask | PDCP_USE_NETLINK_BIT | LINK_ENB_PDCP_TO_IP_DRIVER_BIT ;
-    netlink_init();
-    if (PDCP_USE_NETLINK_QUEUES) {
-//     pdcp_netlink_init();
-    }
-  }
+
+
 }
 
 //-----------------------------------------------------------------------------

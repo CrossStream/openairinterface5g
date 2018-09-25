@@ -1337,24 +1337,7 @@ uint8_t do_SIB23(uint8_t Mod_id,
                enc_rval.failed_type->name, enc_rval.encoded);
 
 
-#if defined(ENABLE_ITTI)
-# if !defined(DISABLE_XER_SPRINT)
-  {
-    char        message_string[15000];
-    size_t      message_string_size;
 
-    if ((message_string_size = xer_sprint(message_string, sizeof(message_string), &asn_DEF_BCCH_DL_SCH_Message, (void *)bcch_message)) > 0) {
-      MessageDef *msg_p;
-
-      msg_p = itti_alloc_new_message_sized (TASK_RRC_ENB, RRC_DL_BCCH, message_string_size + sizeof (IttiMsgText));
-      msg_p->ittiMsg.rrc_dl_bcch.size = message_string_size;
-      memcpy(&msg_p->ittiMsg.rrc_dl_bcch.text, message_string, message_string_size);
-
-      itti_send_msg_to_task(TASK_UNKNOWN, Mod_id, msg_p);
-    }
-  }
-# endif
-#endif
 
   LOG_D(RRC,"[eNB] SystemInformation Encoded %zd bits (%zd bytes)\n",enc_rval.encoded,(enc_rval.encoded+7)/8);
 
@@ -1415,7 +1398,9 @@ uint8_t do_RRCConnectionRequest(uint8_t Mod_id, uint8_t *buffer,uint8_t *rv)
   rrcConnectionRequest->criticalExtensions.choice.rrcConnectionRequest_r8.spare.size=1;
   rrcConnectionRequest->criticalExtensions.choice.rrcConnectionRequest_r8.spare.bits_unused = 7;
 
-
+   if ( LOG_DEBUGFLAG(DEBUG_ASN1) ) {
+      xer_fprint(stdout, &asn_DEF_UL_CCCH_Message, (void*)&ul_ccch_msg);
+   }
   enc_rval = uper_encode_to_buffer(&asn_DEF_UL_CCCH_Message,
                                    NULL,
                                    (void*)&ul_ccch_msg,
@@ -1424,24 +1409,6 @@ uint8_t do_RRCConnectionRequest(uint8_t Mod_id, uint8_t *buffer,uint8_t *rv)
   AssertFatal (enc_rval.encoded > 0, "ASN1 message encoding failed (%s, %lu)!\n",
                enc_rval.failed_type->name, enc_rval.encoded);
 
-#if defined(ENABLE_ITTI)
-# if !defined(DISABLE_XER_SPRINT)
-  {
-    char        message_string[20000];
-    size_t      message_string_size;
-
-    if ((message_string_size = xer_sprint(message_string, sizeof(message_string), &asn_DEF_UL_CCCH_Message, (void *) &ul_ccch_msg)) > 0) {
-      MessageDef *msg_p;
-
-      msg_p = itti_alloc_new_message_sized (TASK_RRC_UE, RRC_UL_CCCH, message_string_size + sizeof (IttiMsgText));
-      msg_p->ittiMsg.rrc_ul_ccch.size = message_string_size;
-      memcpy(&msg_p->ittiMsg.rrc_ul_ccch.text, message_string, message_string_size);
-
-      itti_send_msg_to_task(TASK_UNKNOWN, NB_eNB_INST + Mod_id, msg_p);
-    }
-  }
-# endif
-#endif
 
   LOG_D(RRC,"[UE] RRCConnectionRequest Encoded %zd bits (%zd bytes) \n",enc_rval.encoded,(enc_rval.encoded+7)/8);
 
@@ -1592,28 +1559,10 @@ uint8_t do_SidelinkUEInformation(uint8_t Mod_id, uint8_t *buffer,  SL_Destinatio
    AssertFatal (enc_rval.encoded > 0, "ASN1 message encoding failed (%s, %lu)!\n",
          enc_rval.failed_type->name, enc_rval.encoded);
 
-#if defined(ENABLE_ITTI)
-# if !defined(DISABLE_XER_SPRINT)
-   {
-      char        message_string[20000];
-      size_t      message_string_size;
 
-      if ((message_string_size = xer_sprint(message_string, sizeof(message_string), &asn_DEF_UL_DCCH_Message, (void *) &ul_dcch_msg)) > 0) {
-         MessageDef *msg_p;
 
-         msg_p = itti_alloc_new_message_sized (TASK_RRC_UE, RRC_UL_DCCH, message_string_size + sizeof (IttiMsgText));
-         msg_p->ittiMsg.rrc_ul_dcch.size = message_string_size;
-         memcpy(&msg_p->ittiMsg.rrc_ul_dcch.text, message_string, message_string_size);
+   LOG_D(RRC,"SidelinkUEInformation Encoded %d bits (%d bytes)\n",(uint32_t)enc_rval.encoded,(uint32_t)((enc_rval.encoded+7)/8));
 
-         itti_send_msg_to_task(TASK_UNKNOWN, NB_eNB_INST + Mod_id, msg_p);
-      }
-   }
-# endif
-#endif
-
-#ifdef USER_MODE
-   LOG_D(RRC,"SidelinkUEInformation Encoded %d bits (%d bytes)\n",enc_rval.encoded,(enc_rval.encoded+7)/8);
-#endif
 
    return((enc_rval.encoded+7)/8);
 
@@ -1665,7 +1614,9 @@ uint8_t do_RRCConnectionSetupComplete(uint8_t Mod_id, uint8_t *buffer, const uin
     rrcConnectionSetupComplete->criticalExtensions.choice.c1.choice.rrcConnectionSetupComplete_r8.registeredMME->mmec.size=1;
     rrcConnectionSetupComplete->criticalExtensions.choice.c1.choice.rrcConnectionSetupComplete_r8.registeredMME->mmec.bits_unused=0;
   */
-
+   if ( LOG_DEBUGFLAG(DEBUG_ASN1) ) {
+      xer_fprint(stdout, &asn_DEF_UL_DCCH_Message, (void*)&ul_dcch_msg);
+   }
   enc_rval = uper_encode_to_buffer(&asn_DEF_UL_DCCH_Message,
                                    NULL,
                                    (void*)&ul_dcch_msg,
@@ -1674,24 +1625,6 @@ uint8_t do_RRCConnectionSetupComplete(uint8_t Mod_id, uint8_t *buffer, const uin
   AssertFatal (enc_rval.encoded > 0, "ASN1 message encoding failed (%s, %lu)!\n",
                enc_rval.failed_type->name, enc_rval.encoded);
 
-#if defined(ENABLE_ITTI)
-# if !defined(DISABLE_XER_SPRINT)
-  {
-    char        message_string[20000];
-    size_t      message_string_size;
-
-    if ((message_string_size = xer_sprint(message_string, sizeof(message_string), &asn_DEF_UL_DCCH_Message, (void *) &ul_dcch_msg)) > 0) {
-      MessageDef *msg_p;
-
-      msg_p = itti_alloc_new_message_sized (TASK_RRC_UE, RRC_UL_DCCH, message_string_size + sizeof (IttiMsgText));
-      msg_p->ittiMsg.rrc_ul_dcch.size = message_string_size;
-      memcpy(&msg_p->ittiMsg.rrc_ul_dcch.text, message_string, message_string_size);
-
-      itti_send_msg_to_task(TASK_UNKNOWN, NB_eNB_INST + Mod_id, msg_p);
-    }
-  }
-# endif
-#endif
 
   LOG_D(RRC,"RRCConnectionSetupComplete Encoded %zd bits (%zd bytes)\n",enc_rval.encoded,(enc_rval.encoded+7)/8);
 
@@ -1726,7 +1659,9 @@ do_RRCConnectionReconfigurationComplete(
   rrcConnectionReconfigurationComplete->criticalExtensions.present =
     RRCConnectionReconfigurationComplete__criticalExtensions_PR_rrcConnectionReconfigurationComplete_r8;
   rrcConnectionReconfigurationComplete->criticalExtensions.choice.rrcConnectionReconfigurationComplete_r8.nonCriticalExtension=NULL;
-
+   if ( LOG_DEBUGFLAG(DEBUG_ASN1) ) {
+      xer_fprint(stdout, &asn_DEF_UL_DCCH_Message, (void*)&ul_dcch_msg);
+   }
   enc_rval = uper_encode_to_buffer(&asn_DEF_UL_DCCH_Message,
                                    NULL,
                                    (void*)&ul_dcch_msg,
@@ -1735,24 +1670,6 @@ do_RRCConnectionReconfigurationComplete(
   AssertFatal (enc_rval.encoded > 0, "ASN1 message encoding failed (%s, %lu)!\n",
                enc_rval.failed_type->name, enc_rval.encoded);
 
-#if defined(ENABLE_ITTI)
-# if !defined(DISABLE_XER_SPRINT)
-  {
-    char        message_string[20000];
-    size_t      message_string_size;
-
-    if ((message_string_size = xer_sprint(message_string, sizeof(message_string), &asn_DEF_UL_DCCH_Message, (void *) &ul_dcch_msg)) > 0) {
-      MessageDef *msg_p;
-
-      msg_p = itti_alloc_new_message_sized (TASK_RRC_UE, RRC_UL_DCCH, message_string_size + sizeof (IttiMsgText));
-      msg_p->ittiMsg.rrc_ul_dcch.size = message_string_size;
-      memcpy(&msg_p->ittiMsg.rrc_ul_dcch.text, message_string, message_string_size);
-
-      itti_send_msg_to_task(TASK_UNKNOWN, ctxt_pP->instance, msg_p);
-    }
-  }
-# endif
-#endif
 
   LOG_D(RRC,"RRCConnectionReconfigurationComplete Encoded %zd bits (%zd bytes)\n",enc_rval.encoded,(enc_rval.encoded+7)/8);
 

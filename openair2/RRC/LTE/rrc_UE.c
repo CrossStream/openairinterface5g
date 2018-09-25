@@ -156,12 +156,13 @@ uint8_t rrc_ue_generate_SidelinkUEInformation( const protocol_ctxt_t* const ctxt
 
 /*------------------------------------------------------------------------------*/
 /* to avoid gcc warnings when compiling with certain options */
-#if defined(ENABLE_USE_MME) || ENABLE_RAL
+//#if defined(ENABLE_USE_MME) || ENABLE_RAL
+
 static Rrc_State_t rrc_get_state (module_id_t ue_mod_idP)
 {
   return UE_rrc_inst[ue_mod_idP].RrcState;
 }
-#endif
+//#endif
 
 static Rrc_Sub_State_t rrc_get_sub_state (module_id_t ue_mod_idP)
 {
@@ -187,8 +188,8 @@ static int rrc_set_state (module_id_t ue_mod_idP, Rrc_State_t state)
 //-----------------------------------------------------------------------------
 static int rrc_set_sub_state( module_id_t ue_mod_idP, Rrc_Sub_State_t subState )
 {
-#if (defined(ENABLE_ITTI) && (defined(ENABLE_USE_MME) || ENABLE_RAL))
-
+//#if (defined(ENABLE_ITTI) && (defined(ENABLE_USE_MME) || ENABLE_RAL))
+if (EPC_MODE_ENABLED) {
   switch (UE_rrc_inst[ue_mod_idP].RrcState) {
   case RRC_STATE_INACTIVE:
     AssertFatal ((RRC_SUB_STATE_INACTIVE_FIRST <= subState) && (subState <= RRC_SUB_STATE_INACTIVE_LAST),
@@ -205,8 +206,8 @@ static int rrc_set_sub_state( module_id_t ue_mod_idP, Rrc_Sub_State_t subState )
                  "Invalid sub state %d for state %d!\n", subState, UE_rrc_inst[ue_mod_idP].RrcState);
     break;
   }
-
-#endif
+}
+//#endif
 
   if (UE_rrc_inst[ue_mod_idP].RrcSubState != subState) {
     LOG_I(RRC,"[UE%i], state %d substate %d -> %d \n" ,ue_mod_idP,UE_rrc_inst[ue_mod_idP].RrcState,
@@ -575,7 +576,7 @@ void rrc_ue_generate_RRCConnectionRequest( const protocol_ctxt_t* const ctxt_pP,
 
 mui_t rrc_mui=0;
 
-#if !(defined(ENABLE_ITTI) && defined(ENABLE_USE_MME))
+//#if !(defined(ENABLE_ITTI) && defined(ENABLE_USE_MME))
 /* NAS Attach request with IMSI */
 static const char const nas_attach_req_imsi[] = {
   0x07, 0x41,
@@ -589,7 +590,7 @@ static const char const nas_attach_req_imsi[] = {
   0x00, 0x00, 0x00, 0x0D, 0x00, 0x00, 0x0A, 0x00, 0x52, 0x12, 0xF2,
   0x01, 0x27, 0x11,
 };
-#endif /* !(defined(ENABLE_ITTI) && defined(ENABLE_USE_MME)) */
+//#endif /* !(defined(ENABLE_ITTI) && defined(ENABLE_USE_MME)) */
 
 //-----------------------------------------------------------------------------
 void
@@ -641,13 +642,16 @@ static void rrc_ue_generate_RRCConnectionSetupComplete( const protocol_ctxt_t* c
   const char * nas_msg;
   int   nas_msg_length;
 
-#if defined(ENABLE_ITTI) && defined(ENABLE_USE_MME)
-  nas_msg         = (char*) UE_rrc_inst[ctxt_pP->module_id].initialNasMsg.data;
-  nas_msg_length  = UE_rrc_inst[ctxt_pP->module_id].initialNasMsg.length;
-#else
-  nas_msg         = nas_attach_req_imsi;
-  nas_msg_length  = sizeof(nas_attach_req_imsi);
-#endif
+//#if defined(ENABLE_ITTI) && defined(ENABLE_USE_MME)
+  if (EPC_MODE_ENABLED) {
+    nas_msg         = (char*) UE_rrc_inst[ctxt_pP->module_id].initialNasMsg.data;
+    nas_msg_length  = UE_rrc_inst[ctxt_pP->module_id].initialNasMsg.length;
+  } else {
+//#else
+    nas_msg         = nas_attach_req_imsi;
+    nas_msg_length  = sizeof(nas_attach_req_imsi);
+  }
+//#endif
 
   size = do_RRCConnectionSetupComplete(ctxt_pP->module_id, buffer, Transaction_id, nas_msg_length, nas_msg);
 
@@ -2895,13 +2899,16 @@ int decode_BCCH_DLSCH_Message(
     }
   }
 
-  if ((rrc_get_sub_state(ctxt_pP->module_id) == RRC_SUB_STATE_IDLE_SIB_COMPLETE)
-#if defined(ENABLE_USE_MME)
-      && (UE_rrc_inst[ctxt_pP->module_id].initialNasMsg.data != NULL)
-#endif
-     ) {
-    rrc_ue_generate_RRCConnectionRequest(ctxt_pP, 0);
-    rrc_set_sub_state( ctxt_pP->module_id, RRC_SUB_STATE_IDLE_CONNECTING );
+//  if ((rrc_get_sub_state(ctxt_pP->module_id) == RRC_SUB_STATE_IDLE_SIB_COMPLETE)
+//#if defined(ENABLE_USE_MME)
+//      && (UE_rrc_inst[ctxt_pP->module_id].initialNasMsg.data != NULL)
+//#endif
+//     ) {
+  if (rrc_get_sub_state(ctxt_pP->module_id) == RRC_SUB_STATE_IDLE_SIB_COMPLETE) {
+    if ( (UE_rrc_inst[ctxt_pP->module_id].initialNasMsg.data != NULL) || (!EPC_MODE_ENABLED)) {
+      rrc_ue_generate_RRCConnectionRequest(ctxt_pP, 0);
+      rrc_set_sub_state( ctxt_pP->module_id, RRC_SUB_STATE_IDLE_CONNECTING );
+    }
   }
 
   VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME( VCD_SIGNAL_DUMPER_FUNCTIONS_UE_DECODE_BCCH, VCD_FUNCTION_OUT );
@@ -3100,8 +3107,8 @@ int decode_SIB1( const protocol_ctxt_t* const ctxt_pP, const uint8_t eNB_index, 
   UE_rrc_inst[ctxt_pP->module_id].Info[eNB_index].SIStatus = 1;
   UE_rrc_inst[ctxt_pP->module_id].Info[eNB_index].SIB1systemInfoValueTag = sib1->systemInfoValueTag;
 
-#if defined(ENABLE_ITTI) && defined(ENABLE_USE_MME)
-  {
+//#if defined(ENABLE_ITTI) && defined(ENABLE_USE_MME)
+  if (EPC_MODE_ENABLED) {
     int cell_valid = 0;
 
     if (sib1->cellAccessRelatedInfo.cellBarred == SystemInformationBlockType1__cellAccessRelatedInfo__cellBarred_notBarred) {
@@ -3153,7 +3160,7 @@ int decode_SIB1( const protocol_ctxt_t* const ctxt_pP, const uint8_t eNB_index, 
           cell_valid = 1;
           break;
         }
-      }
+      } /* for plmn = 0;... */
     }
 
     if (cell_valid == 0) {
@@ -3164,8 +3171,9 @@ int decode_SIB1( const protocol_ctxt_t* const ctxt_pP, const uint8_t eNB_index, 
 
       itti_send_msg_to_task(TASK_PHY_UE, ctxt_pP->instance, msg_p);
     }
-  }
-#endif
+  } /* EPC_MODE_ENABLED */
+//#endif
+ 
 
   VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME( VCD_SIGNAL_DUMPER_FUNCTIONS_RRC_UE_DECODE_SIB1, VCD_FUNCTION_OUT );
 
@@ -3792,10 +3800,12 @@ uint64_t arfcn_to_freq(long arfcn) {
 
 	if (UE_rrc_inst[ctxt_pP->module_id].MBMS_flag < 3) // see -Q option
 #endif
-#if !(defined(ENABLE_ITTI) && defined(ENABLE_USE_MME))
-	  rrc_ue_generate_RRCConnectionRequest( ctxt_pP, eNB_index );
+//#if !(defined(ENABLE_ITTI) && defined(ENABLE_USE_MME))
+          if (EPC_MODE_ENABLED) {
+	    rrc_ue_generate_RRCConnectionRequest( ctxt_pP, eNB_index );
+          }
 
-#endif
+//#endif
 
 	if (UE_rrc_inst[ctxt_pP->module_id].Info[eNB_index].State == RRC_IDLE) {
 	  LOG_I( RRC, "[UE %d] Received SIB1/SIB2/SIB3 Switching to RRC_SI_RECEIVED\n", ctxt_pP->module_id );
@@ -4694,7 +4704,7 @@ void *rrc_ue_task( void *args_p )
       AssertFatal (result == EXIT_SUCCESS, "Failed to free memory (%d)!\n", result);
       break;
 
-# if defined(ENABLE_USE_MME)
+//# if defined(ENABLE_USE_MME)
 
     case NAS_KENB_REFRESH_REQ:
         memcpy((void*)UE_rrc_inst[ue_mod_id].kenb, (void*)NAS_KENB_REFRESH_REQ(msg_p).kenb, sizeof(UE_rrc_inst[ue_mod_id].kenb));
@@ -4868,7 +4878,7 @@ void *rrc_ue_task( void *args_p )
       break;
     }
 
-# endif
+//# endif
 
 # if ENABLE_RAL
 

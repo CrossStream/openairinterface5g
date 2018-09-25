@@ -1000,11 +1000,17 @@ int rrc_eNB_process_S1AP_INITIAL_CONTEXT_SETUP_REQ(MessageDef *msg_p, const char
       create_tunnel_req.rnti       = ue_context_p->ue_context.rnti; // warning put zero above
 //      create_tunnel_req.num_tunnels    = i;
 
-      gtpv1u_create_s1u_tunnel(
+  if (EPC_MODE_ENABLED) {
+       gtpv1u_create_s1u_tunnel(
         instance,
         &create_tunnel_req,
         &create_tunnel_resp);
-
+   } else {
+       noS1_create_s1u_tunnel(
+       instance,
+       &create_tunnel_req,
+       &create_tunnel_resp);
+   }
       rrc_eNB_process_GTPV1U_CREATE_TUNNEL_RESP(
           &ctxt,
           &create_tunnel_resp,
@@ -1347,10 +1353,17 @@ int rrc_eNB_process_S1AP_E_RAB_SETUP_REQ(MessageDef *msg_p, const char *msg_name
       create_tunnel_req.num_tunnels    = e_rab_done;
       
       // NN: not sure if we should create a new tunnel: need to check teid, etc.
-      gtpv1u_create_s1u_tunnel(
-        instance,
-        &create_tunnel_req,
-        &create_tunnel_resp);
+      if (EPC_MODE_ENABLED) {
+        gtpv1u_create_s1u_tunnel(
+          instance,
+          &create_tunnel_req,
+          &create_tunnel_resp);
+       } else {
+       noS1_create_s1u_tunnel(
+          instance,
+          &create_tunnel_req,
+          &create_tunnel_resp);
+       }
 
       rrc_eNB_process_GTPV1U_CREATE_TUNNEL_RESP(
           &ctxt,

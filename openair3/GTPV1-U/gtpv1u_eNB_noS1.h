@@ -19,15 +19,18 @@
  *      contact@openairinterface.org
  */
 
-#ifndef CREATE_TASKS_H_
-#define CREATE_TASKS_H_
+/*! \file openair3/GTPV1-U/gtpv1u_eNB_noS1.h
+ * \brief configuration module, include file describing parameters, common to all implementations
+ * \author Francois TABURET
+ * \date 09/2018
+ * \version 0.1
+ * \company NOKIA BellLabs France
+ * \email: francois.taburet@nokia-bell-labs.com
+ * \note
+ * \warning
+ */
 
-#if defined(ENABLE_ITTI)
-/* External declaration of L2L1 task that depend on the target */
-extern void *l2l1_task(void *arg);
+#ifndef INCLUDE_GTPV1U_NOS1_H
+#define INCLUDE_GTPV1U_NOS1_H
 
-int create_tasks(uint32_t enb_nb, int32_t noS1);
-int create_tasks_ue(uint32_t ue_nb, int32_t noS1);
 #endif
-
-#endif /* CREATE_TASKS_H_ */
