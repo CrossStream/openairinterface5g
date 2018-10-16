@@ -59,7 +59,7 @@
 #include "common/utils/LOG/vcd_signal_dumper.h"
 #include "UTIL/OPT/opt.h"
 
-
+#include "common/config/config_userapi.h"
 #include "T.h"
 
 extern double cpuf;
@@ -158,11 +158,20 @@ static const eutra_band_t eutra_bands[] = {
 };
 
 
-
+threads_t threads= {-1,-1,-1,-1,-1,-1,-1};
 
 pthread_t                       main_ue_thread;
 pthread_attr_t                  attr_UE_thread;
 struct sched_param              sched_param_UE_thread;
+
+
+void get_uethreads_params(void) {
+  paramdef_t cmdline_threadsparams[] =CMDLINE_UETHREADSPARAMS_DESC;
+
+
+  config_process_cmdline( cmdline_threadsparams,sizeof(cmdline_threadsparams)/sizeof(paramdef_t),NULL);
+}
+
 
 void phy_init_lte_ue_transport(PHY_VARS_UE *ue,int absraction_flag);
 
@@ -369,7 +378,6 @@ void init_UE_stub_single_thread(int nb_inst,int eMBMS_active, int uecap_xer_in, 
   int         inst;
 
   LOG_I(PHY,"UE : Calling Layer 2 for initialization, nb_inst: %d \n", nb_inst);
-
   l2_init_ue(eMBMS_active,(uecap_xer_in==1)?uecap_xer:NULL,
 	     0,// cba_group_active
 	     0); // HO flag

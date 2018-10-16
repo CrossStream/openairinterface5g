@@ -43,14 +43,16 @@
 #include "common/utils/LOG/log.h"
 #include "COMMON/platform_types.h"
 #include "COMMON/platform_constants.h"
-#include "common/utils/LOG/vcd_signal_dumper.h"
 #include "common/ran_context.h"
-#include "gtpv1u_eNB_defs.h"
-#define ENB_TASK_MAIN
+
 #include "common/config/config_userapi.h"
 #include "openair2/ENB_APP/enb_paramdef.h"  /* to get ip parameters to configure tun interface*/
-#include "gtpv1u_eNB_task.h"
-#include "gtpv1u_eNB_noS1.h"
+
+
+
+
+
+static noS1_gtpv1u_task_struct_t noS1_gtpv1u_task;
 
 int noS1_create_s1u_tunnel( const instance_t instanceP,
                             const gtpv1u_enb_create_tunnel_req_t *create_tunnel_req,
@@ -90,11 +92,12 @@ int noS1_delete_s1u_tunnel(const instance_t instance,
 
 int noS1_send(const instance_t instance,
               gtpv1u_enb_tunnel_data_req_t *req) {
+/* 
   uint8_t *buffer=req->buffer+req->offset;;
   size_t length=req->length;
   uint64_t rnti=req->rnti;
   int  rab_id=req->rab_id;
-  /*
+
     il faut lire l'adresse source du UE (si on l'a pas rajoutée dans le create tunnel
     la ranger dans la table des IP->teid
     et envoyer le paquet (probablement en raw car l'entête ip est déja faite)

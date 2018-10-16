@@ -1157,24 +1157,7 @@ uint8_t do_RRCConnectionReestablishmentReject_NB_IoT(
   }
 
   //Only change in "asn_DEF_DL_CCCH_Message_NB"
-#if defined(ENABLE_ITTI)
-# if !defined(DISABLE_XER_SPRINT)
-  {
-    char        message_string[20000];
-    size_t      message_string_size;
 
-    if ((message_string_size = xer_sprint(message_string, sizeof(message_string), &asn_DEF_DL_CCCH_Message_NB, (void *) &dl_ccch_msg_NB_IoT)) > 0) {
-      MessageDef *msg_p;
-
-      msg_p = itti_alloc_new_message_sized (TASK_RRC_ENB_NB_IoT, RRC_DL_CCCH, message_string_size + sizeof (IttiMsgText));
-      msg_p->ittiMsg.rrc_dl_ccch.size = message_string_size;
-      memcpy(&msg_p->ittiMsg.rrc_dl_ccch.text, message_string, message_string_size);
-
-      itti_send_msg_to_task(TASK_UNKNOWN, Mod_id, msg_p);
-    }
-  }
-# endif
-#endif
 
 #ifdef USER_MODE
   LOG_D(RRC,"RRCConnectionReestablishmentReject Encoded %zd bits (%zd bytes)\n",
@@ -1227,24 +1210,6 @@ uint8_t do_RRCConnectionReject_NB_IoT(
                enc_rval.failed_type->name, enc_rval.encoded);
   }
 
-#if defined(ENABLE_ITTI)
-# if !defined(DISABLE_XER_SPRINT)
-  {
-    char        message_string[20000];
-    size_t      message_string_size;
-
-    if ((message_string_size = xer_sprint(message_string, sizeof(message_string), &asn_DEF_DL_CCCH_Message_NB, (void *) &dl_ccch_msg_NB_IoT)) > 0) {
-      MessageDef *msg_p;
-
-      msg_p = itti_alloc_new_message_sized (TASK_RRC_ENB_NB_IoT, RRC_DL_CCCH, message_string_size + sizeof (IttiMsgText));
-      msg_p->ittiMsg.rrc_dl_ccch.size = message_string_size;
-      memcpy(&msg_p->ittiMsg.rrc_dl_ccch.text, message_string, message_string_size);
-
-      itti_send_msg_to_task(TASK_UNKNOWN, Mod_id, msg_p);
-    }
-  }
-# endif
-#endif
 
 #ifdef USER_MODE
   LOG_D(RRC,"RRCConnectionReject-NB Encoded %zd bits (%zd bytes)\n",
@@ -1284,24 +1249,7 @@ uint8_t do_DLInformationTransfer_NB_IoT(
   encoded = uper_encode_to_new_buffer (&asn_DEF_DL_DCCH_Message_NB, NULL, (void*) &dl_dcch_msg_NB_IoT, (void **) buffer);
 
   //only change in "asn_DEF_DL_DCCH_Message_NB"
-#if defined(ENABLE_ITTI)
-# if !defined(DISABLE_XER_SPRINT)
-  {
-    char        message_string[10000];
-    size_t      message_string_size;
 
-    if ((message_string_size = xer_sprint(message_string, sizeof(message_string), &asn_DEF_DL_DCCH_Message_NB, (void *)&dl_dcch_msg_NB_IoT)) > 0) {
-      MessageDef *msg_p;
-
-      msg_p = itti_alloc_new_message_sized (TASK_RRC_ENB_NB_IoT, RRC_DL_DCCH, message_string_size + sizeof (IttiMsgText));
-      msg_p->ittiMsg.rrc_dl_dcch.size = message_string_size;
-      memcpy(&msg_p->ittiMsg.rrc_dl_dcch.text, message_string, message_string_size);
-
-      itti_send_msg_to_task(TASK_UNKNOWN, Mod_id, msg_p);
-    }
-  }
-# endif
-#endif
 
   return encoded;
 }
@@ -1359,24 +1307,6 @@ uint8_t do_RRCConnectionReestablishment_NB_IoT(
            xer_fprint(stdout,&asn_DEF_DL_CCCH_Message_NB,(void*)&dl_ccch_msg_NB_IoT);
         }
 
-#if defined(ENABLE_ITTI)
-# if !defined(DISABLE_XER_SPRINT)
-  {
-    char        message_string[30000];
-    size_t      message_string_size;
-
-    if ((message_string_size = xer_sprint(message_string, sizeof(message_string), &asn_DEF_DL_CCCH_Message_NB, (void *) &dl_ccch_msg_NB_IoT)) > 0) {
-      MessageDef *msg_p;
-
-      msg_p = itti_alloc_new_message_sized (TASK_RRC_ENB_NB_IoT, RRC_DL_CCCH, message_string_size + sizeof (IttiMsgText));
-      msg_p->ittiMsg.rrc_dl_ccch.size = message_string_size;
-      memcpy(&msg_p->ittiMsg.rrc_dl_ccch.text, message_string, message_string_size);
-
-      itti_send_msg_to_task(TASK_UNKNOWN, Mod_id, msg_p);
-    }
-  }
-# endif
-#endif
 
   LOG_I(RRC,"RRCConnectionReestablishment-NB Encoded %zd bits (%zd bytes)\n",enc_rval.encoded,(enc_rval.encoded+7)/8);
   return 0;

@@ -23,12 +23,12 @@
 # include "intertask_interface.h"
 # include "create_tasks.h"
 # include "common/utils/LOG/log.h"
+# include "targets/RT/USER/lte-softmodem.h"
 
 # ifdef OPENAIR2
 #     include "sctp_eNB_task.h"
 #     include "x2ap_eNB.h"
 #     include "s1ap_eNB.h"
-#     include "nas_ue_task.h"
 #     include "udp_eNB_task.h"
 #     include "gtpv1u_eNB_task.h"
 #   if ENABLE_RAL
@@ -73,7 +73,7 @@ int status;
   	LOG_E(S1AP, "Create task for S1AP failed\n");
   	return -1;
       }
-      if(!emulate_rf){
+      if(!(get_softmodem_params()->emulate_rf)){
   	if (itti_create_task (TASK_UDP, udp_eNB_task, NULL) < 0) {
   	  LOG_E(UDP_, "Create task for UDP failed\n");
   	  return -1;

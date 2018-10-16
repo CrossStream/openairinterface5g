@@ -26,8 +26,8 @@
 * \email: 
 */
 
-#ifndef GTPV1U_ENB_TASK_H_
-#define GTPV1U_ENB_TASK_H_
+#ifndef GTPV1U_NOS1_ENB_TASK_H_
+#define GTPV1U_NOS1_ENB_TASK_H_
 
 
 /*
@@ -43,9 +43,7 @@ gtpv1u_new_data_req(
 typedef struct {
    int tunfd;
 } noS1_gtpv1u_task_struct_t;
-#ifdef ENB_TASK_MAIN
-noS1_gtpv1u_task_struct_t noS1_gtpv1u_task;
-#endif
+
 
 int   gtpv1u_eNB_init(void);
 void *gtpv1u_eNB_process_itti_msg(void*);
@@ -75,4 +73,4 @@ gtpv1u_update_s1u_tunnel(
     const instance_t                              instanceP,
     const gtpv1u_enb_create_tunnel_req_t * const  create_tunnel_req_pP,
     const rnti_t                                  prior_rnti);
-#endif /* GTPV1U_ENB_TASK_H_ */
+#endif /* GTPV1U_NOS1_ENB_TASK_H_ */

@@ -2491,8 +2491,7 @@ int RCconfig_X2(MessageDef *msg_p, uint32_t i) {
 int RCconfig_parallel(void) {
   char *parallel_conf = NULL;
   char *worker_conf   = NULL;
-  extern char *parallel_config;
-  extern char *worker_config;
+
   paramdef_t ThreadParams[]  = THREAD_CONF_DESC;
   paramlist_def_t THREADParamList = {THREAD_CONFIG_STRING_THREAD_STRUCT,NULL,0};
   config_getlist( &THREADParamList,NULL,0,NULL);
@@ -2511,9 +2510,10 @@ int RCconfig_parallel(void) {
     worker_conf   = strdup("WORKER_ENABLE");
   }
 
-  if(parallel_config == NULL) set_parallel_conf(parallel_conf);
 
-  if(worker_config == NULL)   set_worker_conf(worker_conf);
+  set_parallel_conf(parallel_conf);
+  set_worker_conf(worker_conf);
+
 
   return 0;
 }

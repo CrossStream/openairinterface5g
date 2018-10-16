@@ -131,26 +131,13 @@ volatile int             start_UE = 0;
 #endif
 volatile int             oai_exit = 0;
 
-clock_source_t clock_source = internal;
-static int wait_for_sync = 0;
-
-unsigned int                    mmapped_dma=0;
-int                             single_thread_flag = 0;
-
-static int8_t                     threequarter_fs=0;
-
 uint32_t                 downlink_frequency[MAX_NUM_CCs][4];
 int32_t                  uplink_frequency_offset[MAX_NUM_CCs][4];
-
-
-// This is a dummy declaration (dlsch_demodulation.c is no longer compiled for eNodeB)
-int16_t dlsch_demod_shift = 0;
 
 int UE_scan = 1;
 int UE_scan_carrier = 0;
 runmode_t mode = normal_txrx;
 int simL1flag;
-int snr_dB;
 FILE *input_fd=NULL;
 
 
@@ -169,11 +156,6 @@ double rx_gain_off = 0.0;
 double sample_rate=30.72e6;
 double bw = 10.0e6;
 
-char   rf_config_file[1024];
-
-int chain_offset=0;
-int phy_test = 0;
-uint8_t usim_test = 0;
 
 uint8_t dci_Format = 0;
 uint8_t agregation_Level =0xFF;
@@ -188,16 +170,12 @@ int                      rx_input_level_dBm;
 
 #ifdef XFORMS
 extern int                      otg_enabled;
-static char                     do_forms=0;
 #else
 int                             otg_enabled;
 #endif
 //int                             number_of_cards =   1;
 
 
-uint32_t target_dl_mcs = 28; //maximum allowed mcs
-uint32_t target_ul_mcs = 20;
-uint32_t timing_advance = 0;
 uint8_t exit_missed_slots=1;
 uint64_t num_missed_slots=0; // counter for the number of missed slots
 
@@ -205,58 +183,16 @@ uint64_t num_missed_slots=0; // counter for the number of missed slots
 extern void reset_opp_meas(void);
 extern void print_opp_meas(void);
 
-extern PHY_VARS_UE* init_ue_vars(LTE_DL_FRAME_PARMS *frame_parms,
-			  uint8_t UE_id,
-			  uint8_t abstraction_flag);
 
 extern void init_eNB_afterRU(void);
 
 int transmission_mode=1;
-int emulate_rf = 0;
-int numerology = 0;
-char *parallel_config = NULL;
-char *worker_config = NULL;
-
-static THREAD_STRUCT thread_struct;
-void set_parallel_conf(char *parallel_conf)
-{
-  if(strcmp(parallel_conf,"PARALLEL_SINGLE_THREAD")==0)           thread_struct.parallel_conf = PARALLEL_SINGLE_THREAD;
-  else if(strcmp(parallel_conf,"PARALLEL_RU_L1_SPLIT")==0)        thread_struct.parallel_conf = PARALLEL_RU_L1_SPLIT;
-  else if(strcmp(parallel_conf,"PARALLEL_RU_L1_TRX_SPLIT")==0)    thread_struct.parallel_conf = PARALLEL_RU_L1_TRX_SPLIT;
-  printf("[CONFIG] parallel conf is set to %d\n",thread_struct.parallel_conf);
-} 
-void set_worker_conf(char *worker_conf)
-{
-  if(strcmp(worker_conf,"WORKER_DISABLE")==0)                     thread_struct.worker_conf = WORKER_DISABLE;
-  else if(strcmp(worker_conf,"WORKER_ENABLE")==0)                 thread_struct.worker_conf = WORKER_ENABLE;
-  printf("[CONFIG] worker conf is set to %d\n",thread_struct.worker_conf);
-} 
-PARALLEL_CONF_t get_thread_parallel_conf(void)
-{
-  return thread_struct.parallel_conf;
-} 
-WORKER_CONF_t get_thread_worker_conf(void)
-{
-  return thread_struct.worker_conf;
-} 
 
 
-static softmodem_params_t softmodem_params;
-/* struct for ethernet specific parameters given in eNB conf file */
-eth_params_t *eth_params;
 
 double cpuf;
 
-extern char uecap_xer[1024];
-char uecap_xer_in=0;
 
-int oaisim_flag=0;
-threads_t threads= {-1,-1,-1,-1,-1,-1,-1};
-
-/* see file openair2/LAYER2/MAC/main.c for why abstraction_flag is needed
- * this is very hackish - find a proper solution
- */
-uint8_t abstraction_flag=0;
 
 /* forward declarations */
 void set_default_frame_parms(LTE_DL_FRAME_PARMS *frame_parms[MAX_NUM_CCs]);
@@ -312,7 +248,7 @@ unsigned int build_rfdc(int dcoff_i_rxfe, int dcoff_q_rxfe) {
   return (dcoff_i_rxfe + (dcoff_q_rxfe<<8));
 }
 
-//#if !defined(ENABLE_ITTI)
+
 void signal_handler(int sig) {
   void *array[10];
   size_t size;
@@ -328,31 +264,9 @@ void signal_handler(int sig) {
   } else {
       printf("Linux signal %s...\n",strsignal(sig));
       exit_function(__FILE__, __FUNCTION__, __LINE__,"softmodem starting exit procedure\n");
-//    oai_exit = 1;
 
 
   }
-}
-//#endif
-#define KNRM  "\x1B[0m"
-#define KRED  "\x1B[31m"
-#define KGRN  "\x1B[32m"
-#define KBLU  "\x1B[34m"
-#define RESET "\033[0m"
-
-
-void signal_handler_itti(int sig) {
-  // Call exit function
-  char msg[256];
-  memset(msg, 0, 256);
-  sprintf(msg, "caught signal %s\n", strsignal(sig));
-  exit_function(__FILE__, __FUNCTION__, __LINE__, msg);
-}
-
-static softmodem_params_t softmodem_params;
-
-uint64_t get_softmodem_optmask(void) {
-return softmodem_params.optmask;
 }
 
 
@@ -527,55 +441,19 @@ void *l2l1_task(void *arg) {
 #endif
 
 
-static void get_options(unsigned int *start_msc) {
+static void get_options(void) {
  
-  int tddflag, nonbiotflag;
- 
-  
-  uint32_t online_log_messages;
-  uint32_t glog_level ;
-  uint32_t start_telnetsrv;
-  uint32_t noS1;
 
-  paramdef_t cmdline_params[] =CMDLINE_PARAMS_DESC ;
-  paramdef_t cmdline_logparams[] =CMDLINE_LOGPARAMS_DESC ;
   CONFIG_SETRTFLAG(CONFIG_NOEXITONHELP);
-  config_process_cmdline( cmdline_params,sizeof(cmdline_params)/sizeof(paramdef_t),NULL); 
-
-  if (strlen(in_path) > 0) {
-      opt_type = OPT_PCAP;
-      opt_enabled=1;
-      printf("Enabling OPT for PCAP  with the following file %s \n",in_path);
-  }
-  if (strlen(in_ip) > 0) {
-      opt_enabled=1;
-      opt_type = OPT_WIRESHARK;
-      printf("Enabling OPT for wireshark for local interface");
-  }
+  get_common_options();
   CONFIG_CLEARRTFLAG(CONFIG_NOEXITONHELP);
-  config_process_cmdline( cmdline_logparams,sizeof(cmdline_logparams)/sizeof(paramdef_t),NULL);
-
-  if(config_isparamset(cmdline_logparams,CMDLINE_ONLINELOG_IDX)) {
-      set_glog_onlinelog(online_log_messages);
-  }
-  if(config_isparamset(cmdline_logparams,CMDLINE_GLOGLEVEL_IDX)) {
-      set_glog(glog_level);
-  }
-  if (start_telnetsrv) {
-     load_module_shlib("telnetsrv",NULL,0,NULL);
-  }
-
-  if (noS1) {
-     softmodem_params.optmask = softmodem_params.optmask | SOFTMODEM_NOS1_BIT;
-  }
-  
   if ( !(CONFIG_ISFLAGSET(CONFIG_ABORT)) ) {
       memset((void*)&RC,0,sizeof(RC));
       /* Read RC configuration file */
       RCConfig();
       NB_eNB_INST = RC.nb_inst;
       printf("Configuration: nb_rrc_inst %d, nb_L1_inst %d, nb_ru %d\n",NB_eNB_INST,RC.nb_L1_inst,RC.nb_RU);
-      if (nonbiotflag <= 0) {
+      if (get_softmodem_params()->nonbiotflag <= 0) {
          load_NB_IoT();
          printf("               nb_nbiot_rrc_inst %d, nb_nbiot_L1_inst %d, nb_nbiot_macrlc_inst %d\n",
                 RC.nb_nb_iot_rrc_inst, RC.nb_nb_iot_L1_inst, RC.nb_nb_iot_macrlc_inst);
@@ -584,8 +462,7 @@ static void get_options(unsigned int *start_msc) {
          RC.nb_nb_iot_rrc_inst=RC.nb_nb_iot_L1_inst=RC.nb_nb_iot_macrlc_inst=0;
       }
    }
-  if(parallel_config != NULL) set_parallel_conf(parallel_config);
-  if(worker_config != NULL)   set_worker_conf(worker_config);
+
 }
 
 
@@ -815,8 +692,6 @@ int main( int argc, char **argv )
 #if defined (XFORMS)
   int ret;
 #endif
-  unsigned int start_msc=0;
-
   if ( load_configmodule(argc,argv) == NULL) {
     exit_fun("[SOFTMODEM] Error, configuration module init failed\n");
   } 
@@ -830,7 +705,7 @@ int main( int argc, char **argv )
 
   printf("Reading in command-line options\n");
 
-  get_options (&start_msc);
+  get_options ();
   if (CONFIG_ISFLAGSET(CONFIG_ABORT) ) {
       fprintf(stderr,"Getting configuration failed\n");
       exit(-1);
@@ -860,7 +735,7 @@ int main( int argc, char **argv )
   itti_init(TASK_MAX, THREAD_MAX, MESSAGES_ID_MAX, tasks_info, messages_info);
 
   // initialize mscgen log after ITTI
-  if (start_msc) {
+  if (get_softmodem_params()->start_msc) {
      load_module_shlib("msc",NULL,0,&msc_interface);
   }
   MSC_INIT(MSC_E_UTRAN, THREAD_MAX+TASK_MAX);
@@ -874,18 +749,14 @@ int main( int argc, char **argv )
 
 
 
-//#if !defined(ENABLE_ITTI)
+
   // to make a graceful exit when ctrl-c is pressed
   signal(SIGSEGV, signal_handler);
   signal(SIGINT, signal_handler);
+  signal(SIGTERM, signal_handler);
   signal(SIGABRT, signal_handler);
-//#endif
 
-#if defined(ENABLE_ITTI)
-  signal(SIGINT, signal_handler_itti);
-  signal(SIGTERM, signal_handler_itti);
-  signal(SIGABRT, signal_handler_itti);
-#endif
+
 
   check_clock();
 
@@ -897,7 +768,7 @@ int main( int argc, char **argv )
 
   printf("Runtime table\n");
   fill_modeled_runtime_table(runtime_phy_rx,runtime_phy_tx);
-  pdcp_module_init(SOFTMODEM_NOS1);
+  pdcp_module_init( ( SOFTMODEM_NOS1 && !(SOFTMODEM_NOKRNMOD))? (PDCP_USE_NETLINK_BIT | LINK_ENB_PDCP_TO_IP_DRIVER_BIT) : LINK_ENB_PDCP_TO_GTPV1U_BIT);
 #if defined(ENABLE_ITTI)
   if (RC.nb_inst > 0)  {
     
@@ -934,7 +805,7 @@ int main( int argc, char **argv )
   
   printf("XFORMS\n");
 
-  if (do_forms==1) {
+  if (get_softmodem_params()->do_forms==1) {
     fl_initialize (&argc, argv, NULL, 0, 0);
     
       form_stats_l2 = create_form_stats_form();
@@ -1005,8 +876,8 @@ int main( int argc, char **argv )
     number_of_cards = 1;    
     printf("RC.nb_L1_inst:%d\n", RC.nb_L1_inst);
     if (RC.nb_L1_inst > 0) {
-      printf("Initializing eNB threads single_thread_flag:%d wait_for_sync:%d\n", single_thread_flag,wait_for_sync);
-      init_eNB(single_thread_flag,wait_for_sync);
+      printf("Initializing eNB threads single_thread_flag:%d wait_for_sync:%d\n", get_softmodem_params()->single_thread_flag,get_softmodem_params()->wait_for_sync);
+      init_eNB(get_softmodem_params()->single_thread_flag,get_softmodem_params()->wait_for_sync);
       //      for (inst=0;inst<RC.nb_L1_inst;inst++)
       //	for (CC_id=0;CC_id<RC.nb_L1_CC[inst];CC_id++) phy_init_lte_eNB(RC.eNB[inst][CC_id],0,0);
     }
@@ -1017,10 +888,10 @@ int main( int argc, char **argv )
     printf("About to Init RU threads RC.nb_RU:%d\n", RC.nb_RU);
     if (RC.nb_RU >0) {
       printf("Initializing RU threads\n");
-      init_RU(rf_config_file);
+      init_RU(get_softmodem_params()->rf_config_file);
       for (ru_id=0;ru_id<RC.nb_RU;ru_id++) {
 	RC.ru[ru_id]->rf_map.card=0;
-	RC.ru[ru_id]->rf_map.chain=CC_id+chain_offset;
+	RC.ru[ru_id]->rf_map.chain=CC_id+(get_softmodem_params()->chain_offset);
       }
     }
 
@@ -1085,7 +956,7 @@ int main( int argc, char **argv )
 #ifdef XFORMS
   printf("waiting for XFORMS thread\n");
 
-  if (do_forms==1) {
+  if (get_softmodem_params()->do_forms==1) {
     pthread_join(forms_thread,&status);
     fl_hide_form(form_stats->stats_form);
     fl_free_form(form_stats->stats_form);

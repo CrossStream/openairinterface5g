@@ -76,7 +76,7 @@
 #include "UTIL/MATH/oml.h"
 #include "common/utils/LOG/vcd_signal_dumper.h"
 #include "UTIL/OPT/opt.h"
-#include "enb_config.h"
+//#include "enb_config.h"
 //#include "PHY/TOOLS/time_meas.h"
 
 #ifndef OPENAIR2
@@ -95,7 +95,7 @@
 #endif
 #include "lte-softmodem.h"
 
-RAN_CONTEXT_t RC;
+
 
 /* temporary compilation wokaround (UE/eNB split */
 uint16_t sf_ahead;
@@ -136,12 +136,10 @@ volatile int             start_UE = 0;
 volatile int             oai_exit = 0;
 
 clock_source_t clock_source = internal;
-static int wait_for_sync = 0;
+
 
 unsigned int                    mmapped_dma=0;
-int                             single_thread_flag=1;
 
-static int8_t                     threequarter_fs=0;
 
 uint32_t                 downlink_frequency[MAX_NUM_CCs][4];
 int32_t                  uplink_frequency_offset[MAX_NUM_CCs][4];
@@ -175,11 +173,6 @@ double bw = 10.0e6;
 
 static int                      tx_max_power[MAX_NUM_CCs]; /* =  {0,0}*/;
 
-char   rf_config_file[1024];
-
-int chain_offset=0;
-int phy_test = 0;
-uint8_t usim_test = 0;
 
 uint8_t dci_Format = 0;
 uint8_t agregation_Level =0xFF;
@@ -194,62 +187,35 @@ int                      rx_input_level_dBm;
 
 #ifdef XFORMS
 extern int                      otg_enabled;
-static char                     do_forms=0;
-#else
-int                             otg_enabled;
 #endif
 //int                             number_of_cards =   1;
 
 
 static LTE_DL_FRAME_PARMS      *frame_parms[MAX_NUM_CCs];
-uint32_t target_dl_mcs = 28; //maximum allowed mcs
-uint32_t target_ul_mcs = 20;
-uint32_t timing_advance = 0;
+
 uint8_t exit_missed_slots=1;
 uint64_t num_missed_slots=0; // counter for the number of missed slots
 
-
+/* prototypes from function implemented in lte-ue.c, probably should be elsewhere in a include
+   file */
 extern void init_UE_stub_single_thread(int nb_inst,int eMBMS_active, int uecap_xer_in, char *emul_iface);
 
 extern PHY_VARS_UE* init_ue_vars(LTE_DL_FRAME_PARMS *frame_parms,
 			  uint8_t UE_id,
 			  uint8_t abstraction_flag);
 
+extern void get_uethreads_params(void);
 
 int transmission_mode=1;
 
-int emulate_rf = 0;
-int numerology = 0;
 char *parallel_config = NULL;
 char *worker_config = NULL;
 
 char* usrp_args=NULL;
 char* usrp_clksrc=NULL;
 
-static THREAD_STRUCT thread_struct;
-void set_parallel_conf(char *parallel_conf)
-{
-  if(strcmp(parallel_conf,"PARALLEL_SINGLE_THREAD")==0)           thread_struct.parallel_conf = PARALLEL_SINGLE_THREAD;
-  else if(strcmp(parallel_conf,"PARALLEL_RU_L1_SPLIT")==0)        thread_struct.parallel_conf = PARALLEL_RU_L1_SPLIT;
-  else if(strcmp(parallel_conf,"PARALLEL_RU_L1_TRX_SPLIT")==0)    thread_struct.parallel_conf = PARALLEL_RU_L1_TRX_SPLIT;
-  printf("[CONFIG] parallel conf is set to %d\n",thread_struct.parallel_conf);
-} 
-void set_worker_conf(char *worker_conf)
-{
-  if(strcmp(worker_conf,"WORKER_DISABLE")==0)                     thread_struct.worker_conf = WORKER_DISABLE;
-  else if(strcmp(worker_conf,"WORKER_ENABLE")==0)                 thread_struct.worker_conf = WORKER_ENABLE;
-  printf("[CONFIG] worker conf is set to %d\n",thread_struct.worker_conf);
-} 
-PARALLEL_CONF_t get_thread_parallel_conf(void)
-{
-  return thread_struct.parallel_conf;
-} 
-WORKER_CONF_t get_thread_worker_conf(void)
-{
-  return thread_struct.worker_conf;
-}  
 
-static softmodem_params_t softmodem_params;
+
 /* struct for ethernet specific parameters given in eNB conf file */
 eth_params_t *eth_params;
 
@@ -261,7 +227,7 @@ extern char uecap_xer[1024];
 char uecap_xer_in=0;
 
 int oaisim_flag=0;
-threads_t threads= {-1,-1,-1,-1,-1,-1,-1};
+
 
 /* see file openair2/LAYER2/MAC/main.c for why abstraction_flag is needed
  * this is very hackish - find a proper solution
@@ -497,47 +463,18 @@ void *l2l1_task(void *arg) {
 
 extern int16_t dlsch_demod_shift;
 
-static void get_options(unsigned int *start_msc) {
+static void get_options(void) {
   int CC_id;
-  int tddflag, nonbiotflag;
+  int tddflag;
   char *loopfile=NULL;
   int dumpframe;
-  uint32_t noS1;
-  uint32_t online_log_messages;
-  uint32_t glog_level;
-  uint32_t start_telnetsrv;
 
-  paramdef_t cmdline_params[] =CMDLINE_PARAMS_DESC ;
-  paramdef_t cmdline_logparams[] =CMDLINE_LOGPARAMS_DESC ;
 
   set_default_frame_parms(frame_parms);
-  CONFIG_SETRTFLAG(CONFIG_NOEXITONHELP);
-  config_process_cmdline( cmdline_params,sizeof(cmdline_params)/sizeof(paramdef_t),NULL); 
+  CONFIG_SETRTFLAG(CONFIG_NOEXITONHELP); 
+  get_common_options();
+  get_uethreads_params();
 
-  if (strlen(in_path) > 0) {
-      opt_type = OPT_PCAP;
-      opt_enabled=1;
-      printf("Enabling OPT for PCAP  with the following file %s \n",in_path);
-  }
-  if (strlen(in_ip) > 0) {
-      opt_enabled=1;
-      opt_type = OPT_WIRESHARK;
-      printf("Enabling OPT for wireshark for local interface");
-  }
-
-  config_process_cmdline( cmdline_logparams,sizeof(cmdline_logparams)/sizeof(paramdef_t),NULL);
-  if(config_isparamset(cmdline_logparams,CMDLINE_ONLINELOG_IDX)) {
-      set_glog_onlinelog(online_log_messages);
-  }
-  if(config_isparamset(cmdline_logparams,CMDLINE_GLOGLEVEL_IDX)) {
-      set_glog(glog_level);
-  }
-  if (start_telnetsrv) {
-     load_module_shlib("telnetsrv",NULL,0,NULL);
-  }
-  if (noS1) {
-     softmodem_params.optmask = softmodem_params.optmask | SOFTMODEM_NOS1_BIT;
-  }
   paramdef_t cmdline_uemodeparams[] =CMDLINE_UEMODEPARAMS_DESC;
   paramdef_t cmdline_ueparams[] =CMDLINE_UEPARAMS_DESC;
 
@@ -613,8 +550,6 @@ static void get_options(unsigned int *start_msc) {
     if(nfapi_mode!=3)
     	uecap_xer_in=1;
 	} *//* UE with config file  */
-  if(parallel_config != NULL) set_parallel_conf(parallel_config);
-  if(worker_config != NULL)   set_worker_conf(worker_config);
 }
 
 
@@ -739,7 +674,7 @@ void init_openair0(LTE_DL_FRAME_PARMS *frame_parms,int rxgain) {
       openair0_cfg[card].rx_gain[i] = rxgain - rx_gain_off;
      
 
-      openair0_cfg[card].configFilename = rf_config_file;
+      openair0_cfg[card].configFilename = get_softmodem_params()->rf_config_file;
       printf("Card %d, channel %d, Setting tx_gain %f, rx_gain %f, tx_freq %f, rx_freq %f\n",
 	     card,i, openair0_cfg[card].tx_gain[i],
 	     openair0_cfg[card].rx_gain[i],
@@ -822,7 +757,6 @@ int main( int argc, char **argv )
 
   int CC_id;
   uint8_t  abstraction_flag=0;
-  unsigned int start_msc=0;
 
   // Default value for the number of UEs. It will hold,
   // if not changed from the command line option --num-ues
@@ -850,7 +784,7 @@ int main( int argc, char **argv )
   printf("Reading in command-line options\n");
 
   for (int i=0;i<MAX_NUM_CCs;i++) tx_max_power[i]=23; 
-  get_options (&start_msc);
+  get_options ();
 
 printf("~~~~~~~~~~~~~~~~~~~~successfully get the parallel config[%d], worker config [%d] \n", get_thread_parallel_conf(), get_thread_worker_conf());
 
@@ -898,7 +832,7 @@ printf("~~~~~~~~~~~~~~~~~~~~successfully get the parallel config[%d], worker con
   itti_init(TASK_MAX, THREAD_MAX, MESSAGES_ID_MAX, tasks_info, messages_info);
 
   // initialize mscgen log after ITTI
-  if (start_msc) {
+  if (get_softmodem_params()->start_msc) {
      load_module_shlib("msc",NULL,0,&msc_interface);
   }
   MSC_INIT(MSC_E_UTRAN, THREAD_MAX+TASK_MAX);
@@ -909,7 +843,7 @@ printf("~~~~~~~~~~~~~~~~~~~~successfully get the parallel config[%d], worker con
       LOG_E(OPT,"failed to run OPT \n");
   }
 
-  pdcp_module_init(SOFTMODEM_NOS1);
+  pdcp_module_init( SOFTMODEM_NOKRNMOD? 0 : (PDCP_USE_NETLINK | LINK_ENB_PDCP_TO_IP_DRIVER_BIT) );
 
 //TTN for D2D
 #if (RRC_VERSION >= MAKE_VERSION(14, 0, 0))
@@ -952,7 +886,7 @@ printf("~~~~~~~~~~~~~~~~~~~~successfully get the parallel config[%d], worker con
 	  			PHY_vars_UE_g[i][CC_id] = init_ue_vars(frame_parms[CC_id], i,abstraction_flag);
 
 
-	  			if (phy_test==1)
+	  			if (get_softmodem_params()->phy_test==1)
 	  				PHY_vars_UE_g[i][CC_id]->mac_enabled = 0;
 	  			else
 	  				PHY_vars_UE_g[i][CC_id]->mac_enabled = 1;
@@ -981,12 +915,12 @@ printf("~~~~~~~~~~~~~~~~~~~~successfully get the parallel config[%d], worker con
       init_UE_stub_single_thread(NB_UE_INST,eMBMS_active,uecap_xer_in,emul_iface);
   }
   else {
-      init_UE(NB_UE_INST,eMBMS_active,uecap_xer_in,0,phy_test,UE_scan,UE_scan_carrier,mode,(int)rx_gain[0][0],tx_max_power[0],
+      init_UE(NB_UE_INST,eMBMS_active,uecap_xer_in,0,get_softmodem_params()->phy_test,UE_scan,UE_scan_carrier,mode,(int)rx_gain[0][0],tx_max_power[0],
               frame_parms[0]);
   }
 
 
-  if (phy_test==0) {
+  if (get_softmodem_params()->phy_test==0) {
     printf("Filling UE band info\n");
     fill_ue_band_info();
     dl_phy_sync_success (0, 0, 0, 1);
@@ -996,7 +930,7 @@ printf("~~~~~~~~~~~~~~~~~~~~successfully get the parallel config[%d], worker con
       number_of_cards = 1;
       for(CC_id=0; CC_id<MAX_NUM_CCs; CC_id++) {
               PHY_vars_UE_g[0][CC_id]->rf_map.card=0;
-              PHY_vars_UE_g[0][CC_id]->rf_map.chain=CC_id+chain_offset;
+              PHY_vars_UE_g[0][CC_id]->rf_map.chain=CC_id+(get_softmodem_params()->chain_offset);
       }
   }
 
@@ -1126,7 +1060,7 @@ printf("~~~~~~~~~~~~~~~~~~~~successfully get the parallel config[%d], worker con
   
   printf("XFORMS\n");
 
-  if (do_forms==1) {
+  if (get_softmodem_params()->do_forms==1) {
     fl_initialize (&argc, argv, NULL, 0, 0);
     
       form_stats = create_form_stats_form();
@@ -1193,7 +1127,7 @@ printf("~~~~~~~~~~~~~~~~~~~~successfully get the parallel config[%d], worker con
 #ifdef XFORMS
   printf("waiting for XFORMS thread\n");
 
-  if (do_forms==1) {
+  if (get_softmodem_params()->do_forms==1) {
     pthread_join(forms_thread,&status);
     fl_hide_form(form_stats->stats_form);
     fl_free_form(form_stats->stats_form);

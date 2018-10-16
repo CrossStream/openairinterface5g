@@ -28,7 +28,6 @@
 
 //#     include "sctp_eNB_task.h"
 //#     include "s1ap_eNB.h"
-#     include "nas_ue_task.h"
 //#     include "udp_eNB_task.h"
 //#     include "gtpv1u_eNB_task.h"
 
@@ -40,6 +39,10 @@
 # endif
 # include "enb_app.h"
 
+/* temporary file for noS1 support, while moving from compile to config option */
+
+s1ap_eNB_config_t s1ap_config;
+
 int create_tasks_ue(uint32_t ue_nb, int32_t noS1)
 {
   LOG_D(ENB_APP, "%s(ue_nb:%d)\n", __FUNCTION__, ue_nb);
@@ -50,17 +53,6 @@ int create_tasks_ue(uint32_t ue_nb, int32_t noS1)
     return -1;
   }
 
-   if (!noS1) {
-      if (ue_nb > 0) {
-        nas_user_container_t *users = calloc(1, sizeof(*users));
-        if (users == NULL) abort();
-        users->count = ue_nb;
-        if (itti_create_task (TASK_NAS_UE, nas_ue_task, users) < 0) {
-          LOG_E(NAS, "Create task for NAS UE failed\n");
-          return -1;
-        }
-      }
-   }
 
     if (ue_nb > 0) {
       if (itti_create_task (TASK_RRC_UE, rrc_ue_task, NULL) < 0) {

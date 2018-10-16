@@ -390,7 +390,7 @@ boolean_t pdcp_remove_UE(
 */
 void pdcp_run            (
               const protocol_ctxt_t* const  ctxt_pP);
-void pdcp_module_init    (int noS1);
+void pdcp_module_init    (uint64_t pdcp_optmask);
 void pdcp_module_cleanup (void);
 void pdcp_layer_init     (void);
 void pdcp_layer_cleanup  (void);

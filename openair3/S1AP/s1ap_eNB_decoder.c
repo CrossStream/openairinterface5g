@@ -51,7 +51,7 @@ static int s1ap_eNB_decode_initiating_message(S1AP_S1AP_PDU_t *pdu)
                   res.result.encoded + sizeof (IttiMsgText));
       message_p->ittiMsg.s1ap_downlink_nas_log.size = res.result.encoded;
       memcpy(&message_p->ittiMsg.s1ap_downlink_nas_log.text, res.buffer, res.result.encoded);
-      itti_send_msg_to_task(TASK_UNKNOWN, INSTANCE_DEFAULT, message_p);
+//      itti_send_msg_to_task(TASK_UNKNOWN, INSTANCE_DEFAULT, message_p);
       free(res.buffer);
       break;
 
@@ -62,7 +62,7 @@ static int s1ap_eNB_decode_initiating_message(S1AP_S1AP_PDU_t *pdu)
                   res.result.encoded + sizeof (IttiMsgText));
       message_p->ittiMsg.s1ap_initial_context_setup_log.size = res.result.encoded;
       memcpy(&message_p->ittiMsg.s1ap_initial_context_setup_log.text, res.buffer, res.result.encoded);
-      itti_send_msg_to_task(TASK_UNKNOWN, INSTANCE_DEFAULT, message_p);
+//      itti_send_msg_to_task(TASK_UNKNOWN, INSTANCE_DEFAULT, message_p);
       free(res.buffer);
       break;
 
@@ -73,7 +73,7 @@ static int s1ap_eNB_decode_initiating_message(S1AP_S1AP_PDU_t *pdu)
                   res.result.encoded + sizeof (IttiMsgText));
       message_p->ittiMsg.s1ap_ue_context_release_command_log.size = res.result.encoded;
       memcpy(&message_p->ittiMsg.s1ap_ue_context_release_command_log.text, res.buffer, res.result.encoded);
-      itti_send_msg_to_task(TASK_UNKNOWN, INSTANCE_DEFAULT, message_p);
+//      itti_send_msg_to_task(TASK_UNKNOWN, INSTANCE_DEFAULT, message_p);
       free(res.buffer);
       break;
 
@@ -84,7 +84,7 @@ static int s1ap_eNB_decode_initiating_message(S1AP_S1AP_PDU_t *pdu)
                   res.result.encoded + sizeof (IttiMsgText));
       message_p->ittiMsg.s1ap_paging_log.size = res.result.encoded;
       memcpy(&message_p->ittiMsg.s1ap_paging_log.text, res.buffer, res.result.encoded);
-      itti_send_msg_to_task(TASK_UNKNOWN, INSTANCE_DEFAULT, message_p);
+//      itti_send_msg_to_task(TASK_UNKNOWN, INSTANCE_DEFAULT, message_p);
       S1AP_INFO("Paging initiating message\n");
       free(res.buffer);
       break;
@@ -96,7 +96,7 @@ static int s1ap_eNB_decode_initiating_message(S1AP_S1AP_PDU_t *pdu)
                   res.result.encoded + sizeof (IttiMsgText));
       message_p->ittiMsg.s1ap_e_rab_setup_request_log.size = res.result.encoded;
       memcpy(&message_p->ittiMsg.s1ap_e_rab_setup_request_log.text, res.buffer, res.result.encoded);
-      itti_send_msg_to_task(TASK_UNKNOWN, INSTANCE_DEFAULT, message_p);
+//      itti_send_msg_to_task(TASK_UNKNOWN, INSTANCE_DEFAULT, message_p);
       free(res.buffer);
       S1AP_INFO("E_RABSetup initiating message\n");
       break;
@@ -108,7 +108,7 @@ static int s1ap_eNB_decode_initiating_message(S1AP_S1AP_PDU_t *pdu)
                   res.result.encoded + sizeof (IttiMsgText));
       message_p->ittiMsg.s1ap_e_rab_modify_request_log.size = res.result.encoded;
       memcpy(&message_p->ittiMsg.s1ap_e_rab_modify_request_log.text, res.buffer, res.result.encoded);
-      itti_send_msg_to_task(TASK_UNKNOWN, INSTANCE_DEFAULT, message_p);
+//      itti_send_msg_to_task(TASK_UNKNOWN, INSTANCE_DEFAULT, message_p);
       free(res.buffer);
       S1AP_INFO("E_RABModify initiating message\n");
       break;
@@ -120,7 +120,7 @@ static int s1ap_eNB_decode_initiating_message(S1AP_S1AP_PDU_t *pdu)
                   res.result.encoded + sizeof (IttiMsgText));
       message_p->ittiMsg.s1ap_e_rab_release_request_log.size = res.result.encoded;
       memcpy(&message_p->ittiMsg.s1ap_e_rab_release_request_log.text, res.buffer, res.result.encoded);
-      itti_send_msg_to_task(TASK_UNKNOWN, INSTANCE_DEFAULT, message_p);
+//      itti_send_msg_to_task(TASK_UNKNOWN, INSTANCE_DEFAULT, message_p);
       free(res.buffer);
       S1AP_INFO("TODO E_RABRelease initiating message\n");
       break;
@@ -132,7 +132,7 @@ static int s1ap_eNB_decode_initiating_message(S1AP_S1AP_PDU_t *pdu)
                   res.result.encoded + sizeof (IttiMsgText));
       message_p->ittiMsg.s1ap_error_indication_log.size = res.result.encoded;
       memcpy(&message_p->ittiMsg.s1ap_error_indication_log.text, res.buffer, res.result.encoded);
-      itti_send_msg_to_task(TASK_UNKNOWN, INSTANCE_DEFAULT, message_p);
+//      itti_send_msg_to_task(TASK_UNKNOWN, INSTANCE_DEFAULT, message_p);
       free(res.buffer);
       S1AP_INFO("TODO ErrorIndication initiating message\n");
       break;
@@ -162,7 +162,7 @@ static int s1ap_eNB_decode_successful_outcome(S1AP_S1AP_PDU_t *pdu)
       message_p = itti_alloc_new_message_sized(TASK_S1AP, message_id, res.result.encoded + sizeof (IttiMsgText));
       message_p->ittiMsg.s1ap_s1_setup_log.size = res.result.encoded;
       memcpy(&message_p->ittiMsg.s1ap_s1_setup_log.text, res.buffer, res.result.encoded);
-      itti_send_msg_to_task(TASK_UNKNOWN, INSTANCE_DEFAULT, message_p);
+//      itti_send_msg_to_task(TASK_UNKNOWN, INSTANCE_DEFAULT, message_p);
       free(res.buffer);
       break;
 
@@ -189,7 +189,7 @@ static int s1ap_eNB_decode_unsuccessful_outcome(S1AP_S1AP_PDU_t *pdu)
       message_p = itti_alloc_new_message_sized(TASK_S1AP, message_id, res.result.encoded + sizeof (IttiMsgText));
       message_p->ittiMsg.s1ap_s1_setup_log.size = res.result.encoded;
       memcpy(&message_p->ittiMsg.s1ap_s1_setup_log.text, res.buffer, res.result.encoded);
-      itti_send_msg_to_task(TASK_UNKNOWN, INSTANCE_DEFAULT, message_p);
+//      itti_send_msg_to_task(TASK_UNKNOWN, INSTANCE_DEFAULT, message_p);
       free(res.buffer);
       break;
 

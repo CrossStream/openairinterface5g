@@ -100,13 +100,13 @@ static int _nas_find_message_index(const uint8_t message_id, const uint8_t *mess
 
 int nas_itti_plain_msg(const char *buffer, const nas_message_t *msg, const int length, const int down_link)
 {
-  MessageDef *message_p;
-  int data_length = length < NAS_DATA_LENGHT_MAX ? length : NAS_DATA_LENGHT_MAX;
-  int message_type = -1;
-  MessagesIds messageId_raw = -1;
-  MessagesIds messageId_plain = -1;
+/* TASK_UNKNOWN no more used    MessageDef *message_p;
+ int data_length = length < NAS_DATA_LENGHT_MAX ? length : NAS_DATA_LENGHT_MAX;
+ int message_type = -1;
+ MessagesIds messageId_raw = -1;
+ MessagesIds messageId_plain = -1;
 
-  /* Define message ids */
+  // Define message ids
   if (msg->header.protocol_discriminator == EPS_MOBILITY_MANAGEMENT_MESSAGE) {
     message_type    = 0;
     messageId_raw   = down_link ? NAS_DL_EMM_RAW_MSG : NAS_UL_EMM_RAW_MSG;
@@ -119,8 +119,9 @@ int nas_itti_plain_msg(const char *buffer, const nas_message_t *msg, const int l
     }
   }
 
+
   if (message_type >= 0) {
-    /* Create and send the RAW message */
+    // Create and send the RAW message 
     message_p = itti_alloc_new_message(TASK_ORIGIN, messageId_raw);
 
     NAS_DL_EMM_RAW_MSG(message_p).lenght = length;
@@ -129,7 +130,7 @@ int nas_itti_plain_msg(const char *buffer, const nas_message_t *msg, const int l
 
     itti_send_msg_to_task(TASK_UNKNOWN, INSTANCE_DEFAULT, message_p);
 
-    /* Create and send the plain message */
+    // Create and send the plain message 
     if (message_type == 0) {
       message_p = itti_alloc_new_message(TASK_ORIGIN, messageId_plain);
 
@@ -144,8 +145,9 @@ int nas_itti_plain_msg(const char *buffer, const nas_message_t *msg, const int l
 
     return itti_send_msg_to_task(TASK_UNKNOWN, INSTANCE_DEFAULT, message_p);
   }
-
   return EXIT_FAILURE;
+*/
+  return 0;
 }
 
 int nas_itti_protected_msg(const char *buffer, const nas_message_t *msg, const int length, const int down_link)
@@ -167,12 +169,14 @@ int nas_itti_protected_msg(const char *buffer, const nas_message_t *msg, const i
       memcpy ((void *) &(NAS_DL_ESM_PROTECTED_MSG(message_p).choice), &msg->security_protected.plain.esm, sizeof (ESM_msg));
     }
   }
-
+  return 0;
+/* TASK_UNKNOWN no more used 
   if (message_p != NULL) {
     return itti_send_msg_to_task(TASK_UNKNOWN, INSTANCE_DEFAULT, message_p);
   }
 
   return EXIT_FAILURE;
+*/
 }
 #endif
 

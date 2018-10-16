@@ -39,7 +39,7 @@
 #include <asn_application.h>
 #include <asn_internal.h> /* for _ASN_DEFAULT_STACK_MAX */
 #include <per_encoder.h>
-
+#include "targets/RT/USER/lte-softmodem.h"
 #include "assertions.h"
 #include "RRCConnectionRequest.h"
 #include "UL-CCCH-Message.h"
@@ -99,7 +99,7 @@ typedef struct xer_sprint_string_s {
 } xer_sprint_string_t;
 
 extern unsigned char NB_eNB_INST;
-extern uint8_t usim_test;
+
 
 extern RAN_CONTEXT_t RC;
 
@@ -1591,6 +1591,7 @@ uint8_t do_RRCConnectionSetupComplete(uint8_t Mod_id, uint8_t *buffer, const uin
 
   rrcConnectionSetupComplete->criticalExtensions.choice.c1.choice.rrcConnectionSetupComplete_r8.nonCriticalExtension=CALLOC(1,
       sizeof(*rrcConnectionSetupComplete->criticalExtensions.choice.c1.choice.rrcConnectionSetupComplete_r8.nonCriticalExtension));
+
 
   rrcConnectionSetupComplete->criticalExtensions.choice.c1.choice.rrcConnectionSetupComplete_r8.selectedPLMN_Identity= 1;
 
@@ -3186,7 +3187,7 @@ OAI_UECapability_t *fill_ue_capability(char *UE_EUTRA_Capability_xer_fname)
     // UE_EUTRA_Capability->measParameters.bandListEUTRA.list.count                         = 0;  // no measurements on other bands
     // UE_EUTRA_Capability->featureGroupIndicators  // null
 
-    if(usim_test == 1)
+    if(get_softmodem_params()->usim_test == 1)
     {
       // featureGroup is mandatory for CMW tests
       // featureGroup is filled only for usim-test mode

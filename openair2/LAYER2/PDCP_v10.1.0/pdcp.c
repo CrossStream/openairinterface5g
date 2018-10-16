@@ -466,10 +466,9 @@ pdcp_data_ind(
   uint8_t      rb_offset= (srb_flagP == 0) ? DTCH -1 :0;
   uint16_t     pdcp_uid=0;      
   uint8_t      oo_flag=0;
-#if defined(LINK_ENB_PDCP_TO_GTPV1U)
   MessageDef  *message_p        = NULL;
   uint8_t     *gtpu_buffer_p    = NULL;
-#endif
+
 
 
   VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PDCP_DATA_IND,VCD_FUNCTION_IN);
@@ -1923,11 +1922,15 @@ rrc_pdcp_config_req (
 
 //-----------------------------------------------------------------------------
  
-void pdcp_module_init( int noS1 ) {
+void pdcp_module_init( uint64_t pdcp_optmask ) {
 
-    LOG_I(PDCP, "pdcp init, noS1: %i\n",noS1);
-    pdcp_params.optmask = pdcp_params.optmask | LINK_ENB_PDCP_TO_GTPV1U_BIT ;
-
+    pdcp_params.optmask = pdcp_params.optmask | pdcp_optmask ;
+    LOG_I(PDCP, "pdcp init,%s %s\n",
+          ((LINK_ENB_PDCP_TO_GTPV1U)?"usegtp":""),
+          ((PDCP_USE_NETLINK)?"usenetlink":""));
+    if (PDCP_USE_NETLINK) {
+        netlink_init();
+    }
 
 }
 
