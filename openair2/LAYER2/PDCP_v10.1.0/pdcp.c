@@ -1923,7 +1923,12 @@ rrc_pdcp_config_req (
 //-----------------------------------------------------------------------------
  
 void pdcp_module_init( uint64_t pdcp_optmask ) {
-
+/* temporary enforce netlink when UE_NAS_USE_TUN is set,
+   this is while switching from noS1 as build option
+   to noS1 as config option                               */
+#ifdef UE_NAS_USE_TUN
+    pdcp_params.optmask = pdcp_params.optmask | PDCP_USE_NETLINK ;
+#endif
     pdcp_params.optmask = pdcp_params.optmask | pdcp_optmask ;
     LOG_I(PDCP, "pdcp init,%s %s\n",
           ((LINK_ENB_PDCP_TO_GTPV1U)?"usegtp":""),

@@ -843,7 +843,7 @@ printf("~~~~~~~~~~~~~~~~~~~~successfully get the parallel config[%d], worker con
       LOG_E(OPT,"failed to run OPT \n");
   }
 
-  pdcp_module_init( SOFTMODEM_NOKRNMOD? 0 : (PDCP_USE_NETLINK | LINK_ENB_PDCP_TO_IP_DRIVER_BIT) );
+  pdcp_module_init( ((!SOFTMODEM_NOS1) || SOFTMODEM_NOKRNMOD)? 0 : (PDCP_USE_NETLINK_BIT | LINK_ENB_PDCP_TO_IP_DRIVER_BIT) );
 
 //TTN for D2D
 #if (RRC_VERSION >= MAKE_VERSION(14, 0, 0))
