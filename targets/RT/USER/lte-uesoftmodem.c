@@ -288,7 +288,8 @@ unsigned int build_rfdc(int dcoff_i_rxfe, int dcoff_q_rxfe) {
   return (dcoff_i_rxfe + (dcoff_q_rxfe<<8));
 }
 
-#if !defined(ENABLE_ITTI)
+
+
 void signal_handler(int sig) {
   void *array[10];
   size_t size;
@@ -302,17 +303,13 @@ void signal_handler(int sig) {
     backtrace_symbols_fd(array, size, 2);
     exit(-1);
   } else {
-    printf("trying to exit gracefully...\n");
-    oai_exit = 1;
+      char msg[64];
+      sprintf(msg,"Received linux signal %s...\n",strsignal(sig));
+      exit_function(__FILE__, __FUNCTION__, __LINE__,msg);
+
+
   }
 }
-#endif
-#define KNRM  "\x1B[0m"
-#define KRED  "\x1B[31m"
-#define KGRN  "\x1B[32m"
-#define KBLU  "\x1B[34m"
-#define RESET "\033[0m"
-
 
 
 void exit_function(const char* file, const char* function, const int line, const char* s)
@@ -785,7 +782,9 @@ int main( int argc, char **argv )
 
   for (int i=0;i<MAX_NUM_CCs;i++) tx_max_power[i]=23; 
   get_options ();
-
+  if (!SOFTMODEM_NOS1) {
+     EPC_MODE_ENABLED = 1;
+  }
 printf("~~~~~~~~~~~~~~~~~~~~successfully get the parallel config[%d], worker config [%d] \n", get_thread_parallel_conf(), get_thread_worker_conf());
 
 
@@ -843,7 +842,7 @@ printf("~~~~~~~~~~~~~~~~~~~~successfully get the parallel config[%d], worker con
       LOG_E(OPT,"failed to run OPT \n");
   }
 
-  pdcp_module_init( ((!SOFTMODEM_NOS1) || SOFTMODEM_NOKRNMOD)? 0 : (PDCP_USE_NETLINK_BIT | LINK_ENB_PDCP_TO_IP_DRIVER_BIT) );
+  pdcp_module_init( ((!SOFTMODEM_NOS1) || SOFTMODEM_NOKRNMOD)? LINK_ENB_PDCP_TO_GTPV1U : (LINK_ENB_PDCP_TO_GTPV1U | PDCP_USE_NETLINK_BIT | LINK_ENB_PDCP_TO_IP_DRIVER_BIT) );
 
 //TTN for D2D
 #if (RRC_VERSION >= MAKE_VERSION(14, 0, 0))
@@ -853,12 +852,11 @@ printf("~~~~~~~~~~~~~~~~~~~~successfully get the parallel config[%d], worker con
   pdcp_pc5_socket_init();
 #endif
 
-#if !defined(ENABLE_ITTI)
   // to make a graceful exit when ctrl-c is pressed
   signal(SIGSEGV, signal_handler);
   signal(SIGINT, signal_handler);
-#endif
-
+  signal(SIGTERM, signal_handler);
+  signal(SIGABRT, signal_handler);
 
   check_clock();
 
