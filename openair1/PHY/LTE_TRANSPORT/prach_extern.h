@@ -33,8 +33,7 @@
 #include "PHY/defs_eNB.h"
 #include "PHY/phy_extern.h"
 
-//#define PRACH_DEBUG 1
-//#define PRACH_WRITE_OUTPUT_DEBUG 1
+
 
 extern uint16_t NCS_unrestricted[16];
 extern uint16_t NCS_restricted[15];

@@ -41,7 +41,7 @@
 
 #include "../LTE_TRANSPORT/prach_extern.h"
 
-//#define PRACH_DEBUG 1
+
 
 int32_t generate_prach( PHY_VARS_UE *ue, uint8_t eNB_id, uint8_t subframe, uint16_t Nf )
 {
@@ -84,13 +84,13 @@ int32_t generate_prach( PHY_VARS_UE *ue, uint8_t eNB_id, uint8_t subframe, uint1
 
 #if defined(EXMIMO) || defined(OAI_USRP)
   prach_start =  (ue->rx_offset+subframe*ue->frame_parms.samples_per_tti-ue->hw_timing_advance-ue->N_TA_offset);
-#ifdef PRACH_DEBUG
+  if ( LOG_DEBUGFLAG(DEBUG_PRACH)) {
     LOG_I(PHY,"[UE %d] prach_start %d, rx_offset %d, hw_timing_advance %d, N_TA_offset %d\n", ue->Mod_id,
         prach_start,
         ue->rx_offset,
         ue->hw_timing_advance,
         ue->N_TA_offset);
-#endif
+  }
 
   if (prach_start<0)
     prach_start+=(ue->frame_parms.samples_per_tti*LTE_NUMBER_OF_SUBFRAMES_PER_FRAME);
@@ -167,9 +167,9 @@ int32_t generate_prach( PHY_VARS_UE *ue, uint8_t eNB_id, uint8_t subframe, uint1
     preamble_shift *= NCS;
   } else { // This is the high-speed case
 
-#ifdef PRACH_DEBUG
-    LOG_I(PHY,"[UE %d] High-speed mode, NCS_config %d\n",ue->Mod_id,Ncs_config);
-#endif
+    if (LOG_DEBUGFLAG(DEBUG_PRACH)) {
+       LOG_I(PHY,"[UE %d] High-speed mode, NCS_config %d\n",ue->Mod_id,Ncs_config);
+    }
 
     not_found = 1;
     preamble_index0 = preamble_index;
@@ -226,14 +226,14 @@ int32_t generate_prach( PHY_VARS_UE *ue, uint8_t eNB_id, uint8_t subframe, uint1
   }
 
   // now generate PRACH signal
-#ifdef PRACH_DEBUG
+  if (LOG_DEBUGFLAG(DEBUG_PRACH)) {
 
-  if (NCS>0)
-    LOG_I(PHY,"Generate PRACH for RootSeqIndex %d, Preamble Index %d, NCS %d (NCS_config %d, N_ZC/NCS %d) n_ra_prb %d: Preamble_offset %d, Preamble_shift %d\n",
-          rootSequenceIndex,preamble_index,NCS,Ncs_config,N_ZC/NCS,n_ra_prb,
-          preamble_offset,preamble_shift);
+    if (NCS>0)
+      LOG_I(PHY,"Generate PRACH for RootSeqIndex %d, Preamble Index %d, NCS %d (NCS_config %d, N_ZC/NCS %d) n_ra_prb %d: Preamble_offset %d, Preamble_shift %d\n",
+            rootSequenceIndex,preamble_index,NCS,Ncs_config,N_ZC/NCS,n_ra_prb,
+            preamble_offset,preamble_shift);
 
-#endif
+  }
 
   //  nsymb = (frame_parms->Ncp==0) ? 14:12;
   //  subframe_offset = (unsigned int)frame_parms->ofdm_symbol_size*subframe*nsymb;
@@ -524,12 +524,12 @@ int32_t generate_prach( PHY_VARS_UE *ue, uint8_t eNB_id, uint8_t subframe, uint1
   
 
   
-#if defined(PRACH_WRITE_OUTPUT_DEBUG)
-  LOG_M("prach_txF0.m","prachtxF0",prachF,prach_len-Ncp,1,1);
-  LOG_M("prach_tx0.m","prachtx0",prach+(Ncp<<1),prach_len-Ncp,1,1);
-  LOG_M("txsig.m","txs",(int16_t*)(&ue->common_vars.txdata[0][0]),2*ue->frame_parms.samples_per_tti,1,1);
-  exit(-1);
-#endif
+  if (LOG_DUMPFLAG(DEBUG_PRACH)) {
+    LOG_M("prach_txF0.m","prachtxF0",prachF,prach_len-Ncp,1,1);
+    LOG_M("prach_tx0.m","prachtx0",prach+(Ncp<<1),prach_len-Ncp,1,1);
+    LOG_M("txsig.m","txs",(int16_t*)(&ue->common_vars.txdata[0][0]),2*ue->frame_parms.samples_per_tti,1,1);
+    exit(-1);
+  }
 
   return signal_energy( (int*)prach, 256 );
 }

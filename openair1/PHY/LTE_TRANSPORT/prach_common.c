@@ -544,12 +544,12 @@ int is_prach_subframe0(LTE_DL_FRAME_PARMS *frame_parms,uint8_t prach_ConfigIndex
     t0_ra = tdd_preamble_map[prach_ConfigIndex][tdd_config].map[0].t0_ra;
     t1_ra = tdd_preamble_map[prach_ConfigIndex][tdd_config].map[0].t1_ra;
     t2_ra = tdd_preamble_map[prach_ConfigIndex][tdd_config].map[0].t2_ra;
-#ifdef PRACH_DEBUG
-    LOG_I(PHY,"[PRACH] Checking for PRACH format (ConfigIndex %d) in TDD subframe %d (%d,%d,%d)\n",
-          prach_ConfigIndex,
-          subframe,
-          t0_ra,t1_ra,t2_ra);
-#endif
+    if( LOG_DEBUGFLAG(DEBUG_PRACH)) {
+      LOG_I(PHY,"[PRACH] Checking for PRACH format (ConfigIndex %d) in TDD subframe %d (%d,%d,%d)\n",
+            prach_ConfigIndex,
+            subframe,
+            t0_ra,t1_ra,t2_ra);
+    }
 
     if ((((t0_ra == 1) && ((frame &1)==0))||  // frame is even and PRACH is in even frames
          ((t0_ra == 2) && ((frame &1)==1))||  // frame is odd and PRACH is in odd frames
@@ -601,9 +601,9 @@ void compute_prach_seq(uint16_t rootSequenceIndex,
 
   VCD_SIGNAL_DUMPER_DUMP_FUNCTION_BY_NAME(VCD_SIGNAL_DUMPER_FUNCTIONS_PHY_UE_COMPUTE_PRACH, VCD_FUNCTION_IN);
 
-#ifdef PRACH_DEBUG
-  LOG_I(PHY,"compute_prach_seq: NCS_config %d, prach_fmt %d\n",zeroCorrelationZoneConfig, prach_fmt);
-#endif
+  if ( LOG_DEBUGFLAG(DEBUG_PRACH)) {
+    LOG_I(PHY,"compute_prach_seq: NCS_config %d, prach_fmt %d\n",zeroCorrelationZoneConfig, prach_fmt);
+  }
 
   AssertFatal(prach_fmt<4,
 	      "PRACH sequence is only precomputed for prach_fmt<4 (have %"PRIu8")\n", prach_fmt );
@@ -618,15 +618,15 @@ void compute_prach_seq(uint16_t rootSequenceIndex,
   }
 
 
-#ifdef PRACH_DEBUG
-  LOG_I( PHY, "compute_prach_seq: done init prach_tables\n" );
-#endif
+  if (LOG_DEBUGFLAG(DEBUG_PRACH)) {
+    LOG_I( PHY, "compute_prach_seq: done init prach_tables\n" );
+  }
 
   if (highSpeedFlag== 0) {
 
-#ifdef PRACH_DEBUG
-    LOG_I(PHY,"Low speed prach : NCS_config %d\n",zeroCorrelationZoneConfig);
-#endif
+    if ( LOG_DEBUGFLAG(DEBUG_PRACH)) {
+      LOG_I(PHY,"Low speed prach : NCS_config %d\n",zeroCorrelationZoneConfig);
+    }
 
     AssertFatal(zeroCorrelationZoneConfig<=15,
 		"FATAL, Illegal Ncs_config for unrestricted format %"PRIu8"\n", zeroCorrelationZoneConfig );
@@ -639,9 +639,9 @@ void compute_prach_seq(uint16_t rootSequenceIndex,
     preamble_offset = 0;
   } else {
 
-#ifdef PRACH_DEBUG
-    LOG_I( PHY, "high speed prach : NCS_config %"PRIu8"\n", zeroCorrelationZoneConfig );
-#endif
+    if ( LOG_DEBUGFLAG(DEBUG_PRACH)) {
+      LOG_I( PHY, "high speed prach : NCS_config %"PRIu8"\n", zeroCorrelationZoneConfig );
+    }
 
     AssertFatal(zeroCorrelationZoneConfig<=14,
 		"FATAL, Illegal Ncs_config for restricted format %"PRIu8"\n", zeroCorrelationZoneConfig );
@@ -695,13 +695,12 @@ void compute_prach_seq(uint16_t rootSequenceIndex,
     }
   }
 
-#ifdef PRACH_DEBUG
+  if ( LOG_DEBUGFLAG(DEBUG_PRACH)) {
 
-  if (NCS>0)
-    LOG_I( PHY, "Initializing %u preambles for PRACH (NCS_config %"PRIu8", NCS %u, N_ZC/NCS %u)\n",
-           num_preambles, zeroCorrelationZoneConfig, NCS, N_ZC/NCS );
-
-#endif
+    if (NCS>0)
+      LOG_I( PHY, "Initializing %u preambles for PRACH (NCS_config %"PRIu8", NCS %u, N_ZC/NCS %u)\n",
+             num_preambles, zeroCorrelationZoneConfig, NCS, N_ZC/NCS );
+  }
 
   for (i=0; i<num_preambles; i++) {
     int index = (rootSequenceIndex+i+preamble_offset) % N_ZC;
@@ -747,25 +746,13 @@ void init_prach_tables(int N_ZC)
         ZC_inv[i] = m;
         break;
       }
-
-#ifdef PRACH_DEBUG
-
-    if (i<16)
-      printf("i %d : inv %d\n",i,ZC_inv[i]);
-
-#endif
   }
 
   // Compute quantized roots of unity
   for (i=0; i<N_ZC; i++) {
     ru[i<<1]     = (int16_t)(floor(32767.0*cos(2*M_PI*(double)i/N_ZC)));
     ru[1+(i<<1)] = (int16_t)(floor(32767.0*sin(2*M_PI*(double)i/N_ZC)));
-#ifdef PRACH_DEBUG
 
-    if (i<16)
-      printf("i %d : runity %d,%d\n",i,ru[i<<1],ru[1+(i<<1)]);
-
-#endif
   }
 }
 

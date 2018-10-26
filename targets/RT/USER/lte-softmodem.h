@@ -127,11 +127,12 @@
 #define CMDLINE_DUMPMEMORY_IDX                  7
 /*------------------------------------------------------------------------------------------------------------------------------------------*/
 
-
+#define START_MSC          softmodem_params.start_msc
 /*-------------------------------------------------------------------------------------------------------------------------------------------------------*/
 /*                                            command line parameters specific to UE                                                                     */
 /*   optname                     helpstr             paramflags                      XXXptr                  defXXXval            type          numelt   */
 /*-------------------------------------------------------------------------------------------------------------------------------------------------------*/
+
 #define CMDLINE_UEPARAMS_DESC {  \
 {"siml1",                      CONFIG_HLP_SIML1,       PARAMFLAG_BOOL,  iptr:&simL1flag,                    defintval:0,          TYPE_INT,      0},   \
 {"U",			       CONFIG_HLP_NUMUE,       0,               u8ptr:&NB_UE_INST,                  defuintval:1,         TYPE_UINT,     0},   \
@@ -152,7 +153,8 @@
 {"mmapped-dma",                CONFIG_HLP_DMAMAP,      PARAMFLAG_BOOL,  uptr:&mmapped_dma,                  defintval:0,          TYPE_INT,      0},   \
 {"clock",                      CONFIG_HLP_CLK,         0,               uptr:&clock_source,                 defintval:0,          TYPE_UINT,     0},   \
 {"s" ,                         CONFIG_HLP_SNR,         0,               iptr:&snr_dB,                       defintval:25,         TYPE_INT,      0},   \
-{"T" ,                         CONFIG_HLP_TDD,         PARAMFLAG_BOOL,  iptr:&tddflag,                      defintval:0,          TYPE_INT,      0}    \
+{"T" ,                         CONFIG_HLP_TDD,         PARAMFLAG_BOOL,  iptr:&tddflag,                      defintval:0,          TYPE_INT,      0},   \
+{"A",                          CONFIG_HLP_TADV,        0,               iptr:&(timingadv),                    defintval:0,          TYPE_INT,      0}    \
 }
 
 /*-------------------------------------------------------------------------------------------------------------------------------------------------------*/
@@ -251,6 +253,7 @@ typedef struct {
    unsigned int   start_msc;
    int            nonbiotflag;
    uint32_t       clock_source;
+   int            hw_timing_advance;
 } softmodem_params_t;
 
 #define SOFTMODEM_NOS1            ( get_softmodem_optmask() & SOFTMODEM_NOS1_BIT)

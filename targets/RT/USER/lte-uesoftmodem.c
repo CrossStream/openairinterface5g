@@ -34,9 +34,6 @@
 #define _GNU_SOURCE             /* See feature_test_macros(7) */
 #include <sched.h>
 
-
-#include "T.h"
-
 #include "rt_wrapper.h"
 
 
@@ -76,8 +73,6 @@
 #include "UTIL/MATH/oml.h"
 #include "common/utils/LOG/vcd_signal_dumper.h"
 #include "UTIL/OPT/opt.h"
-//#include "enb_config.h"
-//#include "PHY/TOOLS/time_meas.h"
 
 #ifndef OPENAIR2
 #include "UTIL/OTG/otg_vars.h"
@@ -208,8 +203,7 @@ extern void get_uethreads_params(void);
 
 int transmission_mode=1;
 
-char *parallel_config = NULL;
-char *worker_config = NULL;
+
 
 char* usrp_args=NULL;
 char* usrp_clksrc=NULL;
@@ -465,7 +459,7 @@ static void get_options(void) {
   int tddflag;
   char *loopfile=NULL;
   int dumpframe;
-
+  int timingadv;
 
   set_default_frame_parms(frame_parms);
   CONFIG_SETRTFLAG(CONFIG_NOEXITONHELP); 
@@ -485,7 +479,7 @@ static void get_options(void) {
       input_fd = fopen(loopfile,"r");
       AssertFatal(input_fd != NULL,"Please provide a valid input file\n");
   }
-
+  get_softmodem_params()->hw_timing_advance = timingadv;
   if ( (cmdline_uemodeparams[CMDLINE_CALIBUERX_IDX].paramflags &  PARAMFLAG_PARAMSET) != 0) mode = rx_calib_ue;
   if ( (cmdline_uemodeparams[CMDLINE_CALIBUERXMED_IDX].paramflags &  PARAMFLAG_PARAMSET) != 0) mode = rx_calib_ue_med;
   if ( (cmdline_uemodeparams[CMDLINE_CALIBUERXBYP_IDX].paramflags &  PARAMFLAG_PARAMSET) != 0) mode = rx_calib_ue_byp;
